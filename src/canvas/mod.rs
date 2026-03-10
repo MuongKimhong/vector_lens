@@ -30,6 +30,18 @@ pub fn spawn_operator_entity(
 ) -> Entity {
     let rect = meshes.add(Rectangle::new(OPERATOR_SIZE.x, OPERATOR_SIZE.y));
 
+    let op_entity = commands
+        .spawn((
+            Mesh2d(rect),
+            MeshMaterial2d(materials.add(rgb(0.0, 0.0, 1.0))),
+            Transform::from_xyz(100.0, 100.0, 0.0),
+            OpBox::new(op.id, &op.name),
+            op.clone()
+        ))
+        .observe(on_op_drag)
+        .observe(on_op_right_clicked)
+        .id();
+
     let mut input_button_entity: Option<Entity> = None;
 
     // if no input, no need to have input button
@@ -45,6 +57,7 @@ pub fn spawn_operator_entity(
                     ..default()
                 },
                 OpConnectButton::new_as_input(),
+                OperatorEntity(op_entity),
                 observe(on_input_button_clicked),
                 observe(on_input_button_mouse_over),
                 observe(on_input_button_mouse_out),
@@ -53,41 +66,33 @@ pub fn spawn_operator_entity(
         }
     }
 
-    let op_entity = commands
-        .spawn((
-            Mesh2d(rect),
-            MeshMaterial2d(materials.add(rgb(0.0, 0.0, 1.0))),
-            Transform::from_xyz(100.0, 100.0, 0.0),
-            OpBox::new(op.id, &op.name),
-            op.clone(),
+    let op_name_entity = commands.spawn((
+        Text2d::new(&op.name),
+        TextFont {
+            font_size: 10.0,
+            ..default()
+        },
+        Transform::from_xyz(0.0, 35.0, 0.0)
+    ))
+    .id();
 
-            children![
-                (
-                    Text2d::new(&op.name),
-                    TextFont {
-                        font_size: 10.0,
-                        ..default()
-                    },
-                    Transform::from_xyz(0.0, 35.0, 0.0),
-                ),
-                (
-                    Mesh2d(meshes.add(CircularSegment::new(10.0, 1.25))),
-                    MeshMaterial2d(materials.add(rgb(1.0, 1.0, 1.0))),
-                    Transform {
-                        translation: Vec3::new((OPERATOR_SIZE.x / 2.0) - 2.0, 0.0, 0.0),
-                        rotation: Quat::from_rotation_z(-PI / 2.0),
-                        ..default()
-                    },
-                    OpConnectButton::new_as_output(),
-                    observe(on_output_button_clicked),
-                    observe(on_output_button_mouse_over),
-                    observe(on_output_button_mouse_out),
-                ),
-            ]
-        ))
-        .observe(on_op_drag)
-        .observe(on_op_right_clicked)
-        .id();
+    let output_button_entity = commands.spawn((
+        Mesh2d(meshes.add(CircularSegment::new(10.0, 1.25))),
+        MeshMaterial2d(materials.add(rgb(1.0, 1.0, 1.0))),
+        Transform {
+            translation: Vec3::new((OPERATOR_SIZE.x / 2.0) - 2.0, 0.0, 0.0),
+            rotation: Quat::from_rotation_z(-PI / 2.0),
+            ..default()
+        },
+        OpConnectButton::new_as_output(),
+        OperatorEntity(op_entity),
+        observe(on_output_button_clicked),
+        observe(on_output_button_mouse_over),
+        observe(on_output_button_mouse_out),
+    ))
+    .id();
+
+    commands.entity(op_entity).add_children(&[op_name_entity, output_button_entity]);
 
     if let Some(input_button_entity) = input_button_entity {
         commands.entity(op_entity).add_child(input_button_entity);
@@ -169,6 +174,9 @@ fn on_input_button_clicked(
     mut clicked: On<Pointer<Click>>,
     mut state: ResMut<OpLineConnectionState>,
     mut connected_curves: ResMut<ConnectedCurves>,
+    mut operator_q: Query<&mut Operator>,
+    mut commands: Commands,
+    operator_button_q: Query<&OperatorEntity>,
     connection_button: Query<&OpConnectButton>
 ) {
     // construct final connnected curve and cancel the temp curve
@@ -178,11 +186,33 @@ fn on_input_button_clicked(
             state.input_button_entity = Some(clicked.entity);
             state.input_button_type = connect_btn.button_type.clone();
 
+            let output_button_entity = state.output_button_entity.unwrap();
+
             connected_curves.0.push(Connection {
                 id: Uuid::new_v4(),
-                out_entity: state.output_button_entity.unwrap(),
+                out_entity: output_button_entity,
                 in_entity: clicked.entity,
             });
+
+            let mut next_op_entity: Option<Entity> = None;
+
+            if let Ok(op_entity) = operator_button_q.get(clicked.entity) {
+                next_op_entity = Some(op_entity.0);
+            }
+
+            if let Ok(op_entity) = operator_button_q.get(output_button_entity) {
+                if let Ok(mut op) = operator_q.get_mut(op_entity.0) {
+                    op.is_first_operator = false; // mark it as false first
+
+                    op.next_operator = next_op_entity;
+
+                    // if an op doesn't have input data, mark it as head or first operator
+                    if op.input == DataValue::None {
+                        op.is_first_operator = true;
+                    }
+                }
+            }
+
             state.reset();
         }
     }
@@ -370,7 +400,8 @@ fn handle_on_close_icon_clicked(
     mut clicked: On<Pointer<Click>>,
     mut hovered_curve: ResMut<HoveredCurve>,
     mut connected_curves: ResMut<ConnectedCurves>,
-    mut commands: Commands
+    mut commands: Commands,
+    window_entity: Single<Entity, With<Window>>,
 ) {
     clicked.propagate(false);
 
@@ -390,7 +421,10 @@ fn handle_on_close_icon_clicked(
         if connection.id == hovered_curve_id {
             connected_curves.0.remove(i);
             hovered_curve.reset();
+
+            let cursor_icon = CursorIcon::System(SystemCursorIcon::Default);
             commands.entity(close_icon_entity).despawn();
+            commands.entity(*window_entity).insert(cursor_icon);
             break;
         }
     }

@@ -21,7 +21,7 @@ impl Plugin for OperatorPlugin {
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub enum DataValue {
     #[default]
     None,
@@ -56,6 +56,13 @@ pub enum OperatorKind {
     ReplaceMissingValue
 }
 
+// Component for holding entity of an operator.
+// This component is used in Operator Input and Output buttons.
+#[derive(Component, Debug, Clone)]
+pub struct OperatorEntity(pub Entity);
+
+// An operator acts like a linked-list. It contains the next operator entity.
+// It's easy to know which operator will get executed next.
 #[derive(Component, Debug, Clone)]
 pub struct Operator {
     pub id: Uuid,
@@ -65,6 +72,8 @@ pub struct Operator {
     pub category: OperatorCategory,
     pub kind: OperatorKind,
     pub entity: Option<Entity>,
+    pub next_operator: Option<Entity>,
+    pub is_first_operator: bool,
     pub properties: HashMap<String, PropertyValue>
 }
 
@@ -85,6 +94,8 @@ impl Operator {
             output,
             category,
             properties,
+            next_operator: None,
+            is_first_operator: false,
             entity: None,
         }
     }
@@ -94,5 +105,9 @@ impl Operator {
         let mut new_op = op.clone();
         new_op.id = Uuid::new_v4();
         new_op
+    }
+
+    pub fn execute(&mut self) {
+        println!("executing {:?}", self.name);
     }
 }

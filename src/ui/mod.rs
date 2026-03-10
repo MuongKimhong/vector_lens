@@ -158,6 +158,37 @@ fn on_result_btn_clicked(_: On<Clicked>, mut ui_state: ResMut<UiState>) {
     ui_state.viewing_tab = ViewingTab::Result;
 }
 
-fn on_run_btn_clicked(_: On<Clicked>, mut ui_state: ResMut<UiState>) {
+fn on_run_btn_clicked(
+    _: On<Clicked>,
+    mut ui_state: ResMut<UiState>,
+    mut operator_q: Query<(Entity, &mut Operator)>,
+) {
     ui_state.is_running = !ui_state.is_running;
+
+    let mut first_op_entity: Option<Entity> = None;
+    let mut exhausted = false;
+
+    for (entity, op) in operator_q.iter() {
+        if op.is_first_operator {
+            first_op_entity = Some(entity);
+            break;
+        }
+    }
+
+    if let Some(first_op_entity) = first_op_entity {
+        let mut current_op_entity = first_op_entity;
+
+        while !exhausted {
+            if let Ok((_, mut op)) = operator_q.get_mut(current_op_entity) {
+                op.execute();
+
+                if let Some(next_op) = op.next_operator {
+                    current_op_entity = next_op;
+                }
+                else {
+                    break;
+                }
+            }
+        }
+    }
 }
