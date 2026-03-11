@@ -175,7 +175,6 @@ fn on_input_button_clicked(
     mut state: ResMut<OpLineConnectionState>,
     mut connected_curves: ResMut<ConnectedCurves>,
     mut operator_q: Query<&mut Operator>,
-    mut commands: Commands,
     operator_button_q: Query<&OperatorEntity>,
     connection_button: Query<&OpConnectButton>
 ) {
@@ -397,7 +396,9 @@ fn handle_on_close_icon_clicked(
     mut clicked: On<Pointer<Click>>,
     mut hovered_curve: ResMut<HoveredCurve>,
     mut connected_curves: ResMut<ConnectedCurves>,
+    mut operator_q: Query<&mut Operator>,
     mut commands: Commands,
+    operator_button_q: Query<&OperatorEntity>,
     window_entity: Single<Entity, With<Window>>,
 ) {
     clicked.propagate(false);
@@ -416,6 +417,13 @@ fn handle_on_close_icon_clicked(
 
     for (i, connection) in connected_curves.0.iter().enumerate() {
         if connection.id == hovered_curve_id {
+            if let Ok(op_entity) = operator_button_q.get(connection.out_entity) {
+                if let Ok(mut op) = operator_q.get_mut(op_entity.0) {
+                    op.next_operator = None;
+                    op.is_first_operator = false;
+                }
+            }
+
             connected_curves.0.remove(i);
             hovered_curve.reset();
 

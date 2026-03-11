@@ -166,7 +166,6 @@ fn on_run_btn_clicked(
     ui_state.is_running = !ui_state.is_running;
 
     let mut first_op_entity: Option<Entity> = None;
-    let mut exhausted = false;
 
     for (entity, op) in operator_q.iter() {
         if op.is_first_operator {
@@ -178,7 +177,7 @@ fn on_run_btn_clicked(
     if let Some(first_op_entity) = first_op_entity {
         let mut current_op_entity = first_op_entity;
 
-        while !exhausted {
+        loop {
             if let Ok((_, mut op)) = operator_q.get_mut(current_op_entity) {
                 op.execute();
 
