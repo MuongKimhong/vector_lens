@@ -175,7 +175,6 @@ fn on_input_button_clicked(
     mut state: ResMut<OpLineConnectionState>,
     mut connected_curves: ResMut<ConnectedCurves>,
     mut operator_q: Query<&mut Operator>,
-    mut commands: Commands,
     operator_button_q: Query<&OperatorEntity>,
     connection_button: Query<&OpConnectButton>
 ) {
@@ -337,6 +336,8 @@ pub fn detect_mouse_over_connected_curves(
 
     let hover_threshold = 6.0;
     let mut is_hovered = false;
+    let mut hovered_connection_id: Option<Uuid> = None;
+    let mut center_point = Vec2::default();
 
     for connection in connected_curves.0.iter() {
         let Ok(out_tf) = transforms.get(connection.out_entity) else { continue };
@@ -353,46 +354,41 @@ pub fn detect_mouse_over_connected_curves(
             for window in positions.windows(2) {
                 if distance_to_segment(mouse_pos, window[0], window[1]) < hover_threshold {
                     is_hovered = true;
+                    center_point = positions[25];
+                    hovered_connection_id = Some(connection.id);
                     break;
                 }
             }
-
-            if !is_hovered && hovered_curve.close_icon_entity.is_some() {
-                let cursor_icon = CursorIcon::System(SystemCursorIcon::Default);
-                commands.entity(*window_entity).insert(cursor_icon);
-
-                if let Some(close_entity) = hovered_curve.close_icon_entity {
-                    commands.entity(close_entity).despawn();
-                    hovered_curve.reset();
-                }
-            }
-
-            if is_hovered && hovered_curve.close_icon_entity.is_none() {
-                let cursor_icon = CursorIcon::System(SystemCursorIcon::Pointer);
-                commands.entity(*window_entity).insert(cursor_icon);
-
-                let center_point = positions[25];
-
-                if hovered_curve.close_icon_entity.is_none() {
-                    let entity = commands.spawn((
-                        Sprite {
-                            image: asset_server.load("close_icon.png"),
-                            custom_size: Some(Vec2::new(25.0, 25.0)),
-                            image_mode: SpriteImageMode::Auto,
-                            ..default()
-                        },
-                        Transform::from_translation(Vec3::new(center_point.x, center_point.y, 1.0)),
-                        Pickable::default()
-                    ))
-                    .observe(handle_on_close_icon_clicked)
-                    .id();
-
-                    hovered_curve.close_icon_entity = Some(entity);
-                    hovered_curve.id = Some(connection.id);
-                }
-            }
-            // break;
         }
+    }
+
+    if !is_hovered && hovered_curve.close_icon_entity.is_some() {
+        let close_entity = hovered_curve.close_icon_entity.unwrap();
+        let cursor_icon = CursorIcon::System(SystemCursorIcon::Default);
+        commands.entity(*window_entity).insert(cursor_icon);
+        commands.entity(close_entity).despawn();
+        hovered_curve.reset();
+    }
+
+    if is_hovered && hovered_curve.close_icon_entity.is_none() {
+        let cursor_icon = CursorIcon::System(SystemCursorIcon::Pointer);
+        commands.entity(*window_entity).insert(cursor_icon);
+
+        let entity = commands.spawn((
+            Sprite {
+                image: asset_server.load("close_icon.png"),
+                custom_size: Some(Vec2::new(25.0, 25.0)),
+                image_mode: SpriteImageMode::Auto,
+                ..default()
+            },
+            Transform::from_translation(Vec3::new(center_point.x, center_point.y, 1.0)),
+            Pickable::default()
+        ))
+        .observe(handle_on_close_icon_clicked)
+        .id();
+
+        hovered_curve.close_icon_entity = Some(entity);
+        hovered_curve.id = hovered_connection_id;
     }
 }
 
@@ -400,7 +396,9 @@ fn handle_on_close_icon_clicked(
     mut clicked: On<Pointer<Click>>,
     mut hovered_curve: ResMut<HoveredCurve>,
     mut connected_curves: ResMut<ConnectedCurves>,
+    mut operator_q: Query<&mut Operator>,
     mut commands: Commands,
+    operator_button_q: Query<&OperatorEntity>,
     window_entity: Single<Entity, With<Window>>,
 ) {
     clicked.propagate(false);
@@ -419,6 +417,13 @@ fn handle_on_close_icon_clicked(
 
     for (i, connection) in connected_curves.0.iter().enumerate() {
         if connection.id == hovered_curve_id {
+            if let Ok(op_entity) = operator_button_q.get(connection.out_entity) {
+                if let Ok(mut op) = operator_q.get_mut(op_entity.0) {
+                    op.next_operator = None;
+                    op.is_first_operator = false;
+                }
+            }
+
             connected_curves.0.remove(i);
             hovered_curve.reset();
 
