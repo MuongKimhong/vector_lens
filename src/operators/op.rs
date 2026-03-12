@@ -1,5 +1,6 @@
 use bevy::prelude::*;
-use bevy::math::cubic_splines::*;
+use bevy::tasks::{block_on, Task};
+use bevy::tasks::futures_lite::future;
 use makara::prelude::*;
 use super::*;
 
@@ -65,4 +66,17 @@ impl OpConnectionLine {
             output_button_entity: output_entity
         }
     }
+}
+
+pub fn handle_op_background_execution_system(
+    mut commands: Commands,
+    mut ui_state: ResMut<UiState>,
+    mut processing_tasks: Query<&mut ProcessingTask>,
+    mut operator_q: Query<(Entity, &mut Operator)>,
+) {
+    let Some(executing_op_entity) = ui_state.executing_operator else {
+        return;
+    };
+
+
 }

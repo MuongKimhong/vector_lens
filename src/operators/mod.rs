@@ -6,6 +6,7 @@ pub use messages::*;
 pub use category::*;
 pub use op::*;
 
+use bevy::tasks::{AsyncComputeTaskPool, Task};
 use bevy::prelude::*;
 use makara::prelude::*;
 use uuid::Uuid;
@@ -56,6 +57,10 @@ pub enum OperatorKind {
     ReplaceMissingValue
 }
 
+// Component hold running task of an operator.
+#[derive(Component)]
+pub struct ProcessingTask(pub Task<DataValue>);
+
 // Component for holding entity of an operator.
 // This component is used in Operator Input and Output buttons.
 #[derive(Component, Debug, Clone)]
@@ -105,6 +110,37 @@ impl Operator {
         let mut new_op = op.clone();
         new_op.id = Uuid::new_v4();
         new_op
+    }
+
+    // Spawn operator execution task into bevy background computation.
+    pub fn spawn_task(&self) -> Task<DataValue> {
+        let thread_pool = AsyncComputeTaskPool::get();
+
+        // We MUST clone the data the background thread needs.
+        // You cannot pass `&mut self` into a background thread!
+        let kind = self.kind.clone();
+        let input_data = self.input.clone();
+        let properties = self.properties.clone();
+
+        thread_pool.spawn(async move {
+            // ---> Heavy background work happens here! <---
+            match kind {
+                OperatorKind::ReadCSV => {
+                    println!("start executing read csv");
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    println!("finished executing read csv");
+                    DataValue::Table
+                }
+                OperatorKind::ReplaceMissingValue => {
+                    // Do math on `input_data` based on `properties`
+                    println!("start executing replace missing value");
+                    std::thread::sleep(std::time::Duration::from_secs(5));
+                    println!("finished executing replace missing value");
+                    DataValue::Table
+                }
+                // ...
+            }
+        })
     }
 
     pub fn execute(&mut self) {

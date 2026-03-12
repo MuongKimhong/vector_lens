@@ -1,6 +1,55 @@
 use bevy::prelude::*;
+use makara::prelude::*;
 use uuid::Uuid;
 use super::*;
+
+#[derive(Default, Debug)]
+pub enum ViewingTab {
+    #[default]
+    Design,
+    Result
+}
+
+#[derive(Resource, Debug, Default)]
+pub struct UiState {
+    pub viewing_tab: ViewingTab,
+    pub is_running: bool,
+    pub executing_operator: Option<Entity>
+}
+
+impl UiState {
+    pub fn on_running_flag_change_system(state: Res<UiState>, mut btn_q: ButtonQuery) {
+        if !state.is_changed() { return; }
+
+        if let Some(mut btn) = btn_q.find_by_id("run-btn") {
+            if state.is_running {
+                btn.set_text("Stop");
+                btn.class.set_class("is-danger");
+            }
+            else {
+                btn.set_text("Run");
+                btn.class.set_class("is-success");
+            }
+        }
+    }
+
+    pub fn on_viewing_tab_change_system(state: Res<UiState>, mut btn_q: ButtonQuery) {
+        if !state.is_changed() { return; }
+
+        let (design_class, result_class) = match state.viewing_tab {
+            ViewingTab::Design => ("is-primary-dark", "is-light"),
+            ViewingTab::Result => ("is-light", "is-primary-dark"),
+        };
+
+        if let Some(btn) = btn_q.find_by_id("design-tab-btn") {
+            btn.class.set_class(design_class);
+        }
+
+        if let Some(btn) = btn_q.find_by_id("result-tab-btn") {
+            btn.class.set_class(result_class);
+        }
+    }
+}
 
 #[derive(Resource, Debug)]
 pub struct OperatorList(pub Vec<Operator>);

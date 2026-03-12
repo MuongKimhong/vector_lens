@@ -9,53 +9,6 @@ use makara::prelude::*;
 
 use super::*;
 
-#[derive(Default, Debug)]
-pub enum ViewingTab {
-    #[default]
-    Design,
-    Result
-}
-
-#[derive(Resource, Debug, Default)]
-pub struct UiState {
-    pub viewing_tab: ViewingTab,
-    pub is_running: bool
-}
-
-impl UiState {
-    pub fn on_running_flag_change_system(state: Res<UiState>, mut btn_q: ButtonQuery) {
-        if !state.is_changed() { return; }
-
-        if let Some(mut btn) = btn_q.find_by_id("run-btn") {
-            if state.is_running {
-                btn.set_text("Stop");
-                btn.class.set_class("is-danger");
-            }
-            else {
-                btn.set_text("Run");
-                btn.class.set_class("is-success");
-            }
-        }
-    }
-
-    pub fn on_viewing_tab_change_system(state: Res<UiState>, mut btn_q: ButtonQuery) {
-        if !state.is_changed() { return; }
-
-        let (design_class, result_class) = match state.viewing_tab {
-            ViewingTab::Design => ("is-primary-dark", "is-light"),
-            ViewingTab::Result => ("is-light", "is-primary-dark"),
-        };
-
-        if let Some(btn) = btn_q.find_by_id("design-tab-btn") {
-            btn.class.set_class(design_class);
-        }
-
-        if let Some(btn) = btn_q.find_by_id("result-tab-btn") {
-            btn.class.set_class(result_class);
-        }
-    }
-}
-
 pub struct UiPlugin;
 
 impl Plugin for UiPlugin {
@@ -161,33 +114,14 @@ fn on_result_btn_clicked(_: On<Clicked>, mut ui_state: ResMut<UiState>) {
 fn on_run_btn_clicked(
     _: On<Clicked>,
     mut ui_state: ResMut<UiState>,
-    mut operator_q: Query<(Entity, &mut Operator)>,
+    operator_q: Query<(Entity, &Operator)>,
 ) {
     ui_state.is_running = !ui_state.is_running;
 
-    let mut first_op_entity: Option<Entity> = None;
-
     for (entity, op) in operator_q.iter() {
         if op.is_first_operator {
-            first_op_entity = Some(entity);
+            ui_state.executing_operator = Some(entity);
             break;
-        }
-    }
-
-    if let Some(first_op_entity) = first_op_entity {
-        let mut current_op_entity = first_op_entity;
-
-        loop {
-            if let Ok((_, mut op)) = operator_q.get_mut(current_op_entity) {
-                op.execute();
-
-                if let Some(next_op) = op.next_operator {
-                    current_op_entity = next_op;
-                }
-                else {
-                    break;
-                }
-            }
         }
     }
 }
