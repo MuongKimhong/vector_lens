@@ -78,5 +78,27 @@ pub fn handle_op_background_execution_system(
         return;
     };
 
+    if let Ok((entity, op)) = operator_q.get_mut(executing_op_entity) {
+        // currently, this is a task being executed
+        if let Ok(mut task) = processing_tasks.get_mut(executing_op_entity) {
+            let task_result = block_on(future::poll_once(&mut task.0));
 
+            if let Some(result) = task_result {
+                commands.entity(executing_op_entity).remove::<ProcessingTask>();
+
+                // point executing_operator to next op
+                ui_state.executing_operator = op.next_operator;
+
+                if op.next_operator.is_none() {
+                    ui_state.is_running = false;
+                }
+            }
+        }
+
+        // no background task, create one
+        else {
+            let task = op.spawn_task();
+            commands.entity(entity).insert(ProcessingTask(task));
+        }
+    }
 }

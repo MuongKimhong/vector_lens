@@ -113,15 +113,31 @@ fn on_result_btn_clicked(_: On<Clicked>, mut ui_state: ResMut<UiState>) {
 
 fn on_run_btn_clicked(
     _: On<Clicked>,
+    mut commands: Commands,
     mut ui_state: ResMut<UiState>,
+    processing_tasks: Query<(Entity, &ProcessingTask)>,
     operator_q: Query<(Entity, &Operator)>,
 ) {
-    ui_state.is_running = !ui_state.is_running;
+    match ui_state.is_running {
+        true => {
+            // stop the running process
+            ui_state.is_running = false;
+            ui_state.executing_operator = None;
 
-    for (entity, op) in operator_q.iter() {
-        if op.is_first_operator {
-            ui_state.executing_operator = Some(entity);
-            break;
+            for (entity, _task) in processing_tasks.iter() {
+                commands.entity(entity).remove::<ProcessingTask>();
+            }
+        }
+        false => {
+            // start execting process
+            for (entity, op) in operator_q.iter() {
+                if op.is_first_operator {
+                    ui_state.executing_operator = Some(entity);
+                    ui_state.is_running = true;
+                    break;
+                }
+            }
         }
     }
+
 }

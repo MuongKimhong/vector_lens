@@ -7,6 +7,7 @@ pub use category::*;
 pub use op::*;
 
 use bevy::tasks::{AsyncComputeTaskPool, Task};
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use bevy::prelude::*;
 use makara::prelude::*;
 use uuid::Uuid;
@@ -19,6 +20,7 @@ pub struct OperatorPlugin;
 impl Plugin for OperatorPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<ToggleOpContext>();
+        app.add_systems(Update, handle_op_background_execution_system);
     }
 }
 
@@ -113,6 +115,7 @@ impl Operator {
     }
 
     // Spawn operator execution task into bevy background computation.
+    // https://bevy-cheatbook.github.io/fundamentals/async-compute.html
     pub fn spawn_task(&self) -> Task<DataValue> {
         let thread_pool = AsyncComputeTaskPool::get();
 
