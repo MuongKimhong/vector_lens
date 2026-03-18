@@ -40,6 +40,10 @@ impl Plugin for UiPlugin {
     }
 }
 
+/// Hold the entity of the current running operator.
+#[derive(Component)]
+pub struct OperatorRunningCircular(pub Entity);
+
 pub fn setup_home_view(
     mut commands: Commands,
     operator_list: Res<OperatorList>
@@ -115,22 +119,32 @@ fn on_run_btn_clicked(
     _: On<Clicked>,
     mut commands: Commands,
     mut ui_state: ResMut<UiState>,
+    mut text_colors: Query<&mut TextColor>,
     processing_tasks: Query<(Entity, &ProcessingTask)>,
-    operator_q: Query<(Entity, &Operator)>,
+    operator_q: Query<(Entity, &Operator, &OperatorNameEntity)>,
 ) {
     match ui_state.is_running {
         true => {
             // stop the running process
+            if let Some(running_entity) = ui_state.executing_operator {
+                if let Ok((_, _, name_entity)) = operator_q.get(running_entity) {
+                    if let Ok(mut color) = text_colors.get_mut(name_entity.0) {
+                        *color = TextColor::default();
+                    }
+                }
+            }
+
             ui_state.is_running = false;
             ui_state.executing_operator = None;
 
             for (entity, _task) in processing_tasks.iter() {
                 commands.entity(entity).remove::<ProcessingTask>();
             }
+
         }
         false => {
             // start execting process
-            for (entity, op) in operator_q.iter() {
+            for (entity, op, _) in operator_q.iter() {
                 if op.is_first_operator {
                     ui_state.executing_operator = Some(entity);
                     ui_state.is_running = true;

@@ -18,6 +18,16 @@ pub fn get_ui_position_from_cursor(windows: &Query<&Window>) -> Option<Vec2> {
     window.cursor_position()
 }
 
+pub fn get_ui_position_from_world_position(
+    camera_q: &Query<(&Camera, &GlobalTransform)>,
+    world_position: Vec3
+) -> Option<Vec2> {
+    let (camera, camera_transform) = camera_q.single().ok()?;
+    camera
+        .world_to_viewport(camera_transform, world_position)
+        .ok()
+}
+
 // check the distance between the given point (mouse) to the line from a to b
 pub fn distance_to_segment(point: Vec2, a: Vec2, b: Vec2) -> f32 {
     let ab = b - a;

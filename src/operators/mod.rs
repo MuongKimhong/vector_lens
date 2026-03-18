@@ -68,6 +68,11 @@ pub struct ProcessingTask(pub Task<DataValue>);
 #[derive(Component, Debug, Clone)]
 pub struct OperatorEntity(pub Entity);
 
+// Component for holding text2d entity of an operator.
+// This component is used in Operator entity.
+#[derive(Component, Debug, Clone)]
+pub struct OperatorNameEntity(pub Entity);
+
 // An operator acts like a linked-list. It contains the next operator entity.
 // It's easy to know which operator will get executed next.
 #[derive(Component, Debug, Clone)]

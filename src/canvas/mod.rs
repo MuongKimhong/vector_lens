@@ -30,12 +30,24 @@ pub fn spawn_operator_entity(
 ) -> Entity {
     let rect = meshes.add(Rectangle::new(OPERATOR_SIZE.x, OPERATOR_SIZE.y));
 
+    let op_name_entity = commands.spawn((
+        Text2d::new(&op.name),
+        TextFont {
+            font_size: 10.0,
+            ..default()
+        },
+        TextColor::default(),
+        Transform::from_xyz(0.0, 35.0, 0.0)
+    ))
+    .id();
+
     let op_entity = commands
         .spawn((
             Mesh2d(rect),
             MeshMaterial2d(materials.add(rgb(0.0, 0.0, 1.0))),
             Transform::from_xyz(100.0, 100.0, 0.0),
             OpBox::new(op.id, &op.name),
+            OperatorNameEntity(op_name_entity),
             op.clone()
         ))
         .observe(on_op_drag)
@@ -65,16 +77,6 @@ pub fn spawn_operator_entity(
             input_button_entity = Some(input_button.id());
         }
     }
-
-    let op_name_entity = commands.spawn((
-        Text2d::new(&op.name),
-        TextFont {
-            font_size: 10.0,
-            ..default()
-        },
-        Transform::from_xyz(0.0, 35.0, 0.0)
-    ))
-    .id();
 
     let output_button_entity = commands.spawn((
         Mesh2d(meshes.add(CircularSegment::new(10.0, 1.25))),
