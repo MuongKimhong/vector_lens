@@ -11,6 +11,7 @@ use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use bevy::prelude::*;
 use makara::prelude::*;
 use uuid::Uuid;
+use polars::prelude::*;
 
 use std::collections::HashMap;
 use crate::resources::*;
@@ -30,7 +31,7 @@ pub enum DataValue {
     None,
     Csv(String),
     FilePath(String),
-    Table,
+    Table(DataFrame),
     Model
 }
 
@@ -131,20 +132,14 @@ impl Operator {
         let properties = self.properties.clone();
 
         thread_pool.spawn(async move {
-            // ---> Heavy background work happens here! <---
             match kind {
-                OperatorKind::ReadCSV => {
-                    println!("start executing read csv");
-                    std::thread::sleep(std::time::Duration::from_secs(5));
-                    println!("finished executing read csv");
-                    DataValue::Table
-                }
+                OperatorKind::ReadCSV => handle_read_csv_operator_execution(&properties),
                 OperatorKind::ReplaceMissingValue => {
                     // Do math on `input_data` based on `properties`
                     println!("start executing replace missing value");
                     std::thread::sleep(std::time::Duration::from_secs(5));
                     println!("finished executing replace missing value");
-                    DataValue::Table
+                    DataValue::Table(DataFrame::empty())
                 }
                 // ...
             }

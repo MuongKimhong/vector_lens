@@ -52,6 +52,7 @@ pub fn spawn_operator_entity(
         ))
         .observe(on_op_drag)
         .observe(on_op_right_clicked)
+        .observe(on_op_clicked)
         .id();
 
     let mut input_button_entity: Option<Entity> = None;
@@ -101,6 +102,18 @@ pub fn spawn_operator_entity(
     }
 
     op_entity
+}
+
+fn on_op_clicked(
+    mut clicked: On<Pointer<Click>>,
+    mut messages: MessageWriter<ToggleOpContext>
+) {
+    clicked.propagate(false);
+
+    if clicked.button != PointerButton::Primary {
+        return;
+    }
+    messages.write(ToggleOpContext::hide());
 }
 
 fn on_op_right_clicked(

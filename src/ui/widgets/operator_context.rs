@@ -62,10 +62,28 @@ pub fn handle_show_and_hide_op_context_menu_system(
 fn on_property_btn_clicked(
     _: On<Clicked>,
     mut panel_state: ResMut<PropertyPanelShowState>,
-    mut messages: MessageWriter<ToggleOpContext>
+    mut messages: MessageWriter<ToggleOpContext>,
+    right_clicked_op_box: Res<RightClickedOperatorBox>,
+    operator_q: Query<(Entity, &OpBox)>
 ) {
-    panel_state.show();
-    messages.write(ToggleOpContext::hide());
+    if let Some(op_id) = right_clicked_op_box.0 {
+        for (entity, op_box) in operator_q.iter() {
+            if op_id != op_box.id {
+                continue;
+            }
+
+            messages.write(ToggleOpContext::hide());
+
+            panel_state.show();
+            panel_state.op_id = Some(op_id);
+            panel_state.op_entity = Some(entity);
+            panel_state.property_type = match op_box.name.as_str() {
+                "Read CSV" => PropertyType::ReadCsv,
+                "Replace missing value" => PropertyType::ReplaceMissingValue,
+                _ => PropertyType::None
+            };
+        }
+    }
 }
 
 fn on_delete_btn_clicked(

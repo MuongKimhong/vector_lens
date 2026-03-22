@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use makara::prelude::*;
 
+use crate::resources::*;
+
 #[derive(Resource, Debug)]
 pub struct ConsolePanelShowState(pub bool);
 
@@ -45,15 +47,14 @@ pub fn console_panel() -> impl Bundle {
             ]),
 
             scroll_!(
+                id: "console-messages-scroll",
                 width: percent(100),
                 height: percent(100),
-                margin_top: px(10);
+                margin_top: px(10),
 
-                [
-                    text_!("This is some text"),
-                    text_!("This is some text"),
-                    text_!("This is some text"),
-                ]
+                on: |_: On<WidgetBuilt>, mut console_log: ResMut<ConsoleLog>| {
+                    console_log.set_changed();
+                }
             )
         ]
     )
@@ -61,4 +62,31 @@ pub fn console_panel() -> impl Bundle {
 
 fn on_close_button_clicked(_: On<Clicked>, mut panel_state: ResMut<ConsolePanelShowState>) {
     panel_state.toggle();
+}
+
+pub fn detect_new_console_messages_system(
+    console_log: Res<ConsoleLog>,
+    mut scroll_q: ScrollQuery
+) {
+    if !console_log.is_changed() {
+        return;
+    }
+
+    let Some(messages) = console_log.messages.get(&console_log.last_key_count) else {
+        return;
+    };
+
+    let Some(last_message) = messages.last() else {
+        return;
+    };
+
+    if let Some(mut scroll) = scroll_q.find_by_id("console-messages-scroll") {
+        let (color, message) = match last_message {
+            LogType::Error(msg) => (Color::srgb(1.0, 0.0, 0.0), msg),
+            LogType::Success(msg) => (Color::srgb(0.09, 0.7, 0.35), msg),
+            LogType::Normal(msg) => (Color::srgb(0.1, 0.1, 0.1), msg)
+        };
+
+        scroll.add_child(text_!(message, color: color));
+    }
 }

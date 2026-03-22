@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 use makara::prelude::*;
+use chrono::Local;
 use uuid::Uuid;
+
+use std::collections::HashMap;
 use super::*;
 
 #[derive(Default, Debug)]
@@ -116,5 +119,57 @@ impl HoveredCurve {
     pub fn reset(&mut self) {
         self.id = None;
         self.close_icon_entity = None;
+    }
+}
+
+#[derive(Debug)]
+pub enum LogType {
+    Normal(String),
+    Success(String),
+    Error(String)
+}
+
+impl Default for LogType {
+    fn default() -> Self {
+        LogType::Normal("".to_string())
+    }
+}
+
+/// Resource to hold log message.
+/// Use hashmap as a session, when running a process, create new session,
+/// which increase key count.
+#[derive(Resource, Debug)]
+pub struct ConsoleLog {
+    pub messages: HashMap<usize, Vec<LogType>>,
+    pub last_key_count: usize
+}
+
+impl Default for ConsoleLog {
+    fn default() -> Self {
+        let mut messages: HashMap<usize, Vec<LogType>> = HashMap::new();
+        let last_key_count = 1;
+        let log = format!(
+            "[LOG][{}] Application started",
+            Local::now().format("%H:%M:%S")
+        );
+
+        messages.insert(last_key_count, vec![LogType::Normal(log)]);
+        Self {
+            messages,
+            last_key_count
+        }
+    }
+}
+
+impl ConsoleLog {
+    pub fn new_session(&mut self) {
+        self.last_key_count += 1;
+        self.messages.insert(self.last_key_count, Vec::new());
+    }
+
+    pub fn new_message(&mut self, log: LogType) {
+        if let Some(messages) = self.messages.get_mut(&self.last_key_count) {
+            messages.push(log);
+        }
     }
 }

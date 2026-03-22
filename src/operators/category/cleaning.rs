@@ -5,8 +5,8 @@ pub fn replace_missing_value_operator() -> Operator {
     Operator::new(
         "Replace missing value",
         OperatorKind::ReplaceMissingValue,
-        DataValue::Table,
-        DataValue::Table,
+        DataValue::Table(DataFrame::empty()),
+        DataValue::Table(DataFrame::empty()),
         OperatorCategory::Cleaning,
         HashMap::from([
             ("replace_with".to_string(), PropertyValue::String("".to_string()))

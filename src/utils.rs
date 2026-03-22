@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use chrono::Local;
 
 pub fn get_world_position_from_cursor(
     windows: &Query<&Window>,
@@ -60,4 +61,8 @@ pub fn construct_connected_spline(start: Vec2, end: Vec2) -> CubicCardinalSpline
 
     let points = vec![p1, p2, p3, p4];
     CubicCardinalSpline::new_catmull_rom(points)
+}
+
+pub fn create_log_with_timestamp(msg: &str) -> String {
+    format!("[LOG][{}] {}", Local::now().format("%H:%M:%S"), msg)
 }
