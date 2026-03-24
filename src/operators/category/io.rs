@@ -1,3 +1,6 @@
+use crossbeam_channel::Sender;
+
+use crate::utils::create_log_with_timestamp;
 use super::*;
 
 pub fn read_csv_operator() -> Operator {
@@ -14,12 +17,21 @@ pub fn read_csv_operator() -> Operator {
 }
 
 pub fn handle_read_csv_operator_execution(
+    task_sender: &Sender<TaskChannelEvent>,
     properties: &HashMap<String, PropertyValue>
 ) -> DataValue {
-    println!("start read csv");
+    let _ =task_sender.send(TaskChannelEvent::LogMessage(
+        LogType::Normal(create_log_with_timestamp("[Read CSV] Started reading CSV file"))
+    ));
+
     let path = match properties.get("path") {
         Some(PropertyValue::String(s)) => s,
-        _ => return DataValue::None,
+        _ => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                LogType::Error(create_log_with_timestamp("[Read CSV] Failed to read CSV file"))
+            ));
+            return DataValue::None;
+        }
     };
 
     let df = CsvReadOptions::default()
@@ -31,11 +43,15 @@ pub fn handle_read_csv_operator_execution(
 
     match df {
         Ok(frame) => {
-            println!("Finish read csv {:?}", frame);
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                LogType::Normal(create_log_with_timestamp("[Read CSV] Finished reading CSV file"))
+            ));
             return DataValue::Table(frame)
         },
         Err(e) => {
-            eprintln!("CSV Read Error: {}", e);
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                LogType::Error(create_log_with_timestamp(&format!("[Read CSV] {e}")))
+            ));
             DataValue::None
         }
     }

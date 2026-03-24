@@ -10,6 +10,7 @@ use bevy::tasks::{AsyncComputeTaskPool, Task};
 use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use bevy::prelude::*;
 use makara::prelude::*;
+use crossbeam_channel::{unbounded, Sender};
 use uuid::Uuid;
 use polars::prelude::*;
 
@@ -21,7 +22,14 @@ pub struct OperatorPlugin;
 impl Plugin for OperatorPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<ToggleOpContext>();
-        app.add_systems(Update, handle_op_background_execution_system);
+        app.add_systems(
+            Update,
+            (
+                handle_op_background_execution_system,
+                handle_insert_task_channel_resource_system,
+                listen_to_task_channel_receiver_system
+            )
+        );
     }
 }
 
@@ -122,7 +130,7 @@ impl Operator {
 
     // Spawn operator execution task into bevy background computation.
     // https://bevy-cheatbook.github.io/fundamentals/async-compute.html
-    pub fn spawn_task(&self) -> Task<DataValue> {
+    pub fn spawn_task(&self, task_sender: &Sender<TaskChannelEvent>) -> Task<DataValue> {
         let thread_pool = AsyncComputeTaskPool::get();
 
         // We MUST clone the data the background thread needs.
@@ -130,10 +138,11 @@ impl Operator {
         let kind = self.kind.clone();
         let input_data = self.input.clone();
         let properties = self.properties.clone();
+        let sender = task_sender.clone();
 
         thread_pool.spawn(async move {
             match kind {
-                OperatorKind::ReadCSV => handle_read_csv_operator_execution(&properties),
+                OperatorKind::ReadCSV => handle_read_csv_operator_execution(&sender, &properties),
                 OperatorKind::ReplaceMissingValue => {
                     // Do math on `input_data` based on `properties`
                     println!("start executing replace missing value");

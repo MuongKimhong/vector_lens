@@ -1,3 +1,4 @@
+use crossbeam_channel::{unbounded, Receiver, Sender};
 use bevy::prelude::*;
 use makara::prelude::*;
 use chrono::Local;
@@ -173,3 +174,16 @@ impl ConsoleLog {
         }
     }
 }
+
+#[derive(Debug)]
+pub enum TaskChannelEvent {
+    LogMessage(LogType),
+    None
+}
+
+/// Receiver that listening to event from other threads created by AsyncComputeTaskPool
+#[derive(Resource, Debug)]
+pub struct TaskChannelReceiver(pub Receiver<TaskChannelEvent>);
+
+#[derive(Resource, Debug)]
+pub struct TaskChannelSender(pub Sender<TaskChannelEvent>);

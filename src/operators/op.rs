@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use bevy::tasks::{block_on, Task};
 use bevy::tasks::futures_lite::future;
 use makara::prelude::*;
-use crate::OperatorRunningCircular;
+use crate::{create_log_with_timestamp, OperatorRunningCircular};
 
 use super::*;
 
@@ -75,7 +75,9 @@ pub fn handle_op_background_execution_system(
     mut ui_state: ResMut<UiState>,
     mut processing_tasks: Query<&mut ProcessingTask>,
     mut operator_q: Query<(Entity, &OperatorNameEntity, &mut Operator)>,
-    mut text_colors: Query<&mut TextColor>
+    mut text_colors: Query<&mut TextColor>,
+    mut console_log: ResMut<ConsoleLog>,
+    sender: Option<Res<TaskChannelSender>>
 ) {
     let Some(executing_op_entity) = ui_state.executing_operator else {
         return;
@@ -86,11 +88,18 @@ pub fn handle_op_background_execution_system(
         if let Ok(mut task) = processing_tasks.get_mut(executing_op_entity) {
             let task_result = block_on(future::poll_once(&mut task.0));
 
-            if let Some(_result) = task_result {
+            if let Some(result) = task_result {
                 commands.entity(executing_op_entity).remove::<ProcessingTask>();
 
                 if let Ok(mut color) = text_colors.get_mut(op_name_entity.0) {
                     *color = TextColor::default();
+                }
+
+                // current operator produce error result, stop the process
+                if result == DataValue::None {
+                    ui_state.is_running = false;
+                    ui_state.executing_operator = None;
+                    return;
                 }
 
                 // point executing_operator to next op
@@ -98,18 +107,50 @@ pub fn handle_op_background_execution_system(
 
                 if op.next_operator.is_none() {
                     ui_state.is_running = false;
+
+                    let log = create_log_with_timestamp("Finished process");
+                    console_log.new_message(LogType::Success(log));
                 }
             }
+            return;
         }
 
         // no background task, create one
-        else {
-            let task = op.spawn_task();
+        if let Some(sender) = sender {
+            let task = op.spawn_task(&sender.0);
             commands.entity(entity).insert(ProcessingTask(task));
 
             if let Ok(mut color) = text_colors.get_mut(op_name_entity.0) {
                 color.0 = Color::srgb(1.0, 1.0, 0.0);
             }
+        }
+    }
+}
+
+pub fn handle_insert_task_channel_resource_system(
+    mut commands: Commands,
+    sender: Option<Res<TaskChannelSender>>,
+    receiver: Option<Res<TaskChannelReceiver>>
+) {
+    if sender.is_none() && receiver.is_none() {
+        let (sender, receiver) = unbounded::<TaskChannelEvent>();
+        commands.insert_resource(TaskChannelSender(sender));
+        commands.insert_resource(TaskChannelReceiver(receiver));
+    }
+}
+
+pub fn listen_to_task_channel_receiver_system(
+    receiver: Option<Res<TaskChannelReceiver>>,
+    mut console_log: ResMut<ConsoleLog>
+) {
+    let Some(receiver) = receiver else {
+        return;
+    };
+
+    while let Ok(channel_event) = receiver.0.try_recv() {
+        match channel_event {
+            TaskChannelEvent::LogMessage(log_type) => console_log.new_message(log_type),
+            _ => {}
         }
     }
 }

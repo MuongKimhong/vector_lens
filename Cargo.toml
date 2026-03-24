@@ -12,14 +12,15 @@ bevy = { version="0.18.1", features=[
     "mesh_picking",
     "sprite_picking"
 ]}
-makara = { path = "../makara" }
-# makara = "0.2.9"
+# makara = { path = "../makara" }
+makara = "0.2.10"
 anyhow = "1.0.101"
 serde_json = "1.0.149"
 serde = "1.0.228"
 rfd = "0.17.2"
 chrono = { version = "0.4.41", features = ["std", "now", "alloc"] }
 polars = { version = "0.53", features = ["csv", "lazy"] }
+crossbeam-channel = "0.5.15"
 
 [dependencies.uuid]
 version = "1.21.0"
