@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 use chrono::Local;
 
+use crate::resources::LogType;
+
 pub fn get_world_position_from_cursor(
     windows: &Query<&Window>,
     camera_q: &Query<(&Camera, &GlobalTransform)>,
@@ -65,4 +67,16 @@ pub fn construct_connected_spline(start: Vec2, end: Vec2) -> CubicCardinalSpline
 
 pub fn create_log_with_timestamp(msg: &str) -> String {
     format!("[LOG][{}] {}", Local::now().format("%H:%M:%S"), msg)
+}
+
+pub fn log_error(msg: &str) -> LogType {
+    LogType::Error(create_log_with_timestamp(msg))
+}
+
+pub fn log_normal(msg: &str) -> LogType {
+    LogType::Normal(create_log_with_timestamp(msg))
+}
+
+pub fn log_success(msg: &str) -> LogType {
+    LogType::Success(create_log_with_timestamp(msg))
 }

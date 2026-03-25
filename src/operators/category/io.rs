@@ -1,7 +1,7 @@
 use crossbeam_channel::Sender;
 use polars::prelude::{CsvReadOptions, DataFrame, SerReader};
 
-use crate::utils::create_log_with_timestamp;
+use crate::utils::{log_error, log_normal};
 use super::*;
 
 pub fn read_csv_operator() -> Operator {
@@ -22,14 +22,14 @@ pub fn handle_read_csv_operator_execution(
     properties: &HashMap<String, PropertyValue>
 ) -> DataValue {
     let _ =task_sender.send(TaskChannelEvent::LogMessage(
-        LogType::Normal(create_log_with_timestamp("[Read CSV] Started reading CSV file"))
+        log_normal("[Read CSV] Started reading CSV file")
     ));
 
     let path = match properties.get("file_path") {
         Some(PropertyValue::String(s)) => s,
         _ => {
             let _ = task_sender.send(TaskChannelEvent::LogMessage(
-                LogType::Error(create_log_with_timestamp("[Read CSV] Failed to read CSV file"))
+                log_error("[Read CSV] Failed to read CSV file")
             ));
             return DataValue::Error;
         }
@@ -45,13 +45,13 @@ pub fn handle_read_csv_operator_execution(
     match df {
         Ok(frame) => {
             let _ = task_sender.send(TaskChannelEvent::LogMessage(
-                LogType::Normal(create_log_with_timestamp("[Read CSV] Finished reading CSV file"))
+                log_normal("[Read CSV] Finished reading CSV file")
             ));
             return DataValue::Table(frame)
         },
         Err(e) => {
             let _ = task_sender.send(TaskChannelEvent::LogMessage(
-                LogType::Error(create_log_with_timestamp(&format!("[Read CSV] {e}")))
+                log_error(&format!("[Read CSV] {e}"))
             ));
             DataValue::Error
         }
