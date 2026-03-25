@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 use bevy::tasks::{block_on, Task};
 use bevy::tasks::futures_lite::future;
-use makara::prelude::*;
-use crate::{create_log_with_timestamp, OperatorRunningCircular};
+use crate::utils::create_log_with_timestamp;
 
 use super::*;
 
@@ -83,7 +82,14 @@ pub fn handle_op_background_execution_system(
         return;
     };
 
-    if let Ok((entity, op_name_entity, op)) = operator_q.get_mut(executing_op_entity) {
+    let mut current_op_result = DataValue::None;
+    let mut next_op_entity: Option<Entity> = None;
+
+    {
+        let Ok((entity, op_name_entity, op)) = operator_q.get_mut(executing_op_entity) else {
+            return;
+        };
+
         // currently, this is a task being executed
         if let Ok(mut task) = processing_tasks.get_mut(executing_op_entity) {
             let task_result = block_on(future::poll_once(&mut task.0));
@@ -96,11 +102,13 @@ pub fn handle_op_background_execution_system(
                 }
 
                 // current operator produce error result, stop the process
-                if result == DataValue::None {
+                if result == DataValue::Error {
                     ui_state.is_running = false;
                     ui_state.executing_operator = None;
                     return;
                 }
+                current_op_result = result;
+                next_op_entity = op.next_operator;
 
                 // point executing_operator to next op
                 ui_state.executing_operator = op.next_operator;
@@ -110,19 +118,29 @@ pub fn handle_op_background_execution_system(
 
                     let log = create_log_with_timestamp("Finished process");
                     console_log.new_message(LogType::Success(log));
+                    return;
                 }
             }
-            return;
         }
 
         // no background task, create one
-        if let Some(sender) = sender {
+        else if let Some(sender) = sender {
             let task = op.spawn_task(&sender.0);
             commands.entity(entity).insert(ProcessingTask(task));
 
             if let Ok(mut color) = text_colors.get_mut(op_name_entity.0) {
                 color.0 = Color::srgb(1.0, 1.0, 0.0);
             }
+        }
+    }
+
+    {
+        if next_op_entity.is_some() && current_op_result != DataValue::None {
+            let Ok((_, _, mut operator)) = operator_q.get_mut(next_op_entity.unwrap()) else {
+                return;
+            };
+
+            operator.input = current_op_result;
         }
     }
 }

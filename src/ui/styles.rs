@@ -78,4 +78,9 @@ pub fn setup_styles(mut styles: ResMut<CustomStyle>) {
             .no_shadow()
             .border_radius(px(2))
     );
+
+    styles.bind_class(
+        "property-container",
+        Style::new().margin_top(px(20))
+    );
 }

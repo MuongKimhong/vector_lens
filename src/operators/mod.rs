@@ -7,12 +7,10 @@ pub use category::*;
 pub use op::*;
 
 use bevy::tasks::{AsyncComputeTaskPool, Task};
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 use bevy::prelude::*;
-use makara::prelude::*;
 use crossbeam_channel::{unbounded, Sender};
 use uuid::Uuid;
-use polars::prelude::*;
+use polars::prelude::{DataFrame};
 
 use std::collections::HashMap;
 use crate::resources::*;
@@ -40,7 +38,8 @@ pub enum DataValue {
     Csv(String),
     FilePath(String),
     Table(DataFrame),
-    Model
+    Model,
+    Error
 }
 
 #[derive(Debug, Clone)]

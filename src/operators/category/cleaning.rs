@@ -13,3 +13,11 @@ pub fn replace_missing_value_operator() -> Operator {
         ])
     )
 }
+
+pub fn handle_replace_missing_value_operator_execution(
+    task_sender: &Sender<TaskChannelEvent>,
+    input: &DataValue,
+    properties: &HashMap<String, PropertyValue>
+) {
+
+}

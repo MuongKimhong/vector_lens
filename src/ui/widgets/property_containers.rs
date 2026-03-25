@@ -13,7 +13,7 @@ fn on_read_csv_file_picker_result(
     if let Some(op_entity) = panel_state.op_entity {
         if let Ok(mut op) = operator_q.get_mut(op_entity) {
             op.properties.insert(
-                "path".to_string(),
+                "file_path".to_string(),
                 PropertyValue::String(change.data.clone())
             );
         }
@@ -28,7 +28,10 @@ pub fn read_csv_property_container() -> impl Bundle {
 
         [
             text_!("File path"),
-            file_picker_!(on: on_read_csv_file_picker_result)
+            file_picker_!(on: on_read_csv_file_picker_result),
+
+            text_!("*Description", margin_top: px(20)),
+            text_!("Read content of provided CSV file and turn into DataFrame.", font_size: 11.5),
         ]
     )
 }
