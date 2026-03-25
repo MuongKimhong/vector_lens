@@ -50,7 +50,12 @@ pub fn operator_panel(operator_list: &OperatorList) -> impl Bundle {
                 button_!("x", class: "is-light"; on: on_close_button_clicked)
             ]),
 
-            text_input_!("Search operator", width: percent(100), margin_top: px(10)),
+            text_input_!(
+                "Search operator",
+                width: percent(100),
+                margin_top: px(10),
+                on: on_search_input_change
+            ),
 
             scroll_!(
                 width: percent(100),
@@ -59,26 +64,30 @@ pub fn operator_panel(operator_list: &OperatorList) -> impl Bundle {
 
                 iter [
                     operators.into_iter().map(|op| {
-                        row_!([
-                            button_!(op.name.as_str(), class: "is-light operator-btn"),
-                            button_!(
-                                "+", class: "is-light", shadow: None, width: px(25);
+                        row_!(
+                            insert: OperatorName(op.name.clone()),
 
-                                on: move |
-                                    _: On<Clicked>,
-                                    mut commands: Commands,
-                                    mut meshes: ResMut<Assets<Mesh>>,
-                                    mut materials: ResMut<Assets<ColorMaterial>>,
-                                    mut operator_in_use: ResMut<OperatorInUseList>
-                                | {
-                                    let mut new_op = Operator::new_from(&op);
-                                    let entity = spawn_operator_entity(&mut commands, &mut meshes, &mut materials, &new_op);
-                                    new_op.entity = Some(entity);
+                            [
+                                button_!(op.name.as_str(), class: "is-light operator-btn"),
+                                button_!(
+                                    "+", class: "is-light", shadow: None, width: px(25);
 
-                                    operator_in_use.0.push(new_op);
-                                }
-                            ),
-                        ])
+                                    on: move |
+                                        _: On<Clicked>,
+                                        mut commands: Commands,
+                                        mut meshes: ResMut<Assets<Mesh>>,
+                                        mut materials: ResMut<Assets<ColorMaterial>>,
+                                        mut operator_in_use: ResMut<OperatorInUseList>
+                                    | {
+                                        let mut new_op = Operator::new_from(&op);
+                                        let entity = spawn_operator_entity(&mut commands, &mut meshes, &mut materials, &new_op);
+                                        new_op.entity = Some(entity);
+
+                                        operator_in_use.0.push(new_op);
+                                    }
+                                ),
+                            ]
+                        )
                     })
                 ]
             )
@@ -88,4 +97,20 @@ pub fn operator_panel(operator_list: &OperatorList) -> impl Bundle {
 
 fn on_close_button_clicked(_: On<Clicked>, mut panel_state: ResMut<OperatorPanelShowState>) {
     panel_state.toggle();
+}
+
+fn on_search_input_change(
+    change: On<Change<String>>,
+    mut operator_names: Query<(&mut Node, &OperatorName)>
+) {
+    let search_text = change.data.to_lowercase();
+
+    for (mut node, name) in operator_names.iter_mut() {
+        if name.0.to_lowercase().contains(&search_text) || search_text.trim().is_empty() {
+            node.display = Display::default();
+        }
+        else {
+            node.display = Display::None;
+        }
+    }
 }

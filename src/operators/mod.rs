@@ -68,6 +68,9 @@ pub enum OperatorKind {
     ReplaceMissingValue
 }
 
+#[derive(Component, Debug, Clone)]
+pub struct OperatorName(pub String);
+
 // Component hold running task of an operator.
 #[derive(Component)]
 pub struct ProcessingTask(pub Task<DataValue>);
