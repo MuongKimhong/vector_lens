@@ -7,6 +7,7 @@ pub use category::*;
 pub use op::*;
 
 use bevy::tasks::{AsyncComputeTaskPool, Task};
+use serde::{Deserialize, Serialize};
 use bevy::prelude::*;
 use crossbeam_channel::{unbounded, Sender};
 use uuid::Uuid;
@@ -31,7 +32,7 @@ impl Plugin for OperatorPlugin {
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq)]
+#[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
 pub enum DataValue {
     #[default]
     None,
@@ -42,7 +43,7 @@ pub enum DataValue {
     Error
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum OperatorCategory {
     IO,
     Cleaning,
@@ -50,7 +51,7 @@ pub enum OperatorCategory {
     DeepLearning
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub enum PropertyValue {
     #[default]
     None,
@@ -61,7 +62,7 @@ pub enum PropertyValue {
     List(Vec<PropertyValue>),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum OperatorKind {
     ReadCSV,
     ReplaceMissingValue
@@ -86,7 +87,7 @@ pub struct OperatorNameEntity(pub Entity);
 
 // An operator acts like a linked-list. It contains the next operator entity.
 // It's easy to know which operator will get executed next.
-#[derive(Component, Debug, Clone)]
+#[derive(Component, Debug, Clone, Deserialize, Serialize)]
 pub struct Operator {
     pub id: Uuid,
     pub name: String,

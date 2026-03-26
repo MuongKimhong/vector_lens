@@ -22,6 +22,7 @@ impl Plugin for UiPlugin {
         app.insert_resource(RightClickedOperatorBox(None));
         app.insert_resource(ConsoleLog::default());
         app.insert_resource(ProcessFileState::default());
+        app.insert_resource(SaveProcessAsBackgroundThreadReceiver::default());
 
         app.add_systems(
             Startup,
