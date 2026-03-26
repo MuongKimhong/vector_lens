@@ -24,4 +24,4 @@ crossbeam-channel = "0.5.15"
 
 [dependencies.uuid]
 version = "1.21.0"
-features = [ "v4" ]
+features = [ "v4", "serde" ]

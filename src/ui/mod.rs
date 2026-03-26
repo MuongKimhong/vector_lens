@@ -21,6 +21,7 @@ impl Plugin for UiPlugin {
         app.insert_resource(PropertyPanelShowState::new());
         app.insert_resource(RightClickedOperatorBox(None));
         app.insert_resource(ConsoleLog::default());
+        app.insert_resource(ProcessFileState::default());
 
         app.add_systems(
             Startup,

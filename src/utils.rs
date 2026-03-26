@@ -66,7 +66,7 @@ pub fn construct_connected_spline(start: Vec2, end: Vec2) -> CubicCardinalSpline
 }
 
 pub fn create_log_with_timestamp(msg: &str) -> String {
-    format!("[LOG][{}] {}", Local::now().format("%H:%M:%S"), msg)
+    format!("[{}] {}", Local::now().format("%H:%M:%S"), msg)
 }
 
 pub fn log_error(msg: &str) -> LogType {

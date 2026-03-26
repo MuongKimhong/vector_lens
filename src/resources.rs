@@ -4,7 +4,7 @@ use makara::prelude::*;
 use chrono::Local;
 use uuid::Uuid;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 use super::*;
 
 #[derive(Default, Debug)]
@@ -187,3 +187,13 @@ pub struct TaskChannelReceiver(pub Receiver<TaskChannelEvent>);
 
 #[derive(Resource, Debug)]
 pub struct TaskChannelSender(pub Sender<TaskChannelEvent>);
+
+/// Resource used to keep track of process file.
+/// - Is user editing an existing process?
+/// - Is user using application without any process file?
+#[derive(Resource, Debug, Default)]
+pub struct ProcessFileState {
+    pub editing_existing_process: bool,
+    pub currernt_process_path: Option<PathBuf>,
+    pub file_needs_to_be_saved: bool
+}

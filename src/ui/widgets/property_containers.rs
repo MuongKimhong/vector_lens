@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use makara::prelude::*;
-use rfd::FileDialog;
 
 use crate::{operators::Operator, PropertyValue};
 use super::*;
