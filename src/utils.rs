@@ -1,5 +1,8 @@
 use bevy::prelude::*;
 use chrono::Local;
+use std::path::PathBuf;
+use std::fs::File;
+use std::io::{BufWriter, Write};
 
 use crate::resources::LogType;
 
@@ -79,4 +82,11 @@ pub fn log_normal(msg: &str) -> LogType {
 
 pub fn log_success(msg: &str) -> LogType {
     LogType::Success(create_log_with_timestamp(msg))
+}
+
+pub fn write_file(path: PathBuf, data: &[u8]) -> std::io::Result<()> {
+    let file = File::create(path)?;
+    let mut writer = BufWriter::new(file);
+    writer.write_all(data)?;
+    Ok(())
 }

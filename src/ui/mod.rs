@@ -21,8 +21,6 @@ impl Plugin for UiPlugin {
         app.insert_resource(PropertyPanelShowState::new());
         app.insert_resource(RightClickedOperatorBox(None));
         app.insert_resource(ConsoleLog::default());
-        app.insert_resource(ProcessFileState::default());
-        app.insert_resource(SaveProcessAsBackgroundThreadReceiver::default());
 
         app.add_systems(
             Startup,
@@ -35,7 +33,7 @@ impl Plugin for UiPlugin {
             handle_show_and_hide_property_panel,
             handle_update_property_panel_content,
             handle_show_and_hide_op_context_menu_system,
-            detect_new_console_messages_system
+            detect_new_console_messages_system,
         ));
 
         app.add_systems(Update, (

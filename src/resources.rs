@@ -1,11 +1,10 @@
-use crossbeam_channel::{unbounded, Receiver, Sender};
-use serde::{Deserialize, Serialize};
+use crossbeam_channel::{Receiver, Sender};
 use bevy::prelude::*;
 use makara::prelude::*;
 use chrono::Local;
 use uuid::Uuid;
 
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 use super::*;
 
 #[derive(Default, Debug)]
@@ -151,7 +150,7 @@ impl Default for ConsoleLog {
         let mut messages: HashMap<usize, Vec<LogType>> = HashMap::new();
         let last_key_count = 1;
         let log = format!(
-            "[LOG][{}] Application started",
+            "[{}] Application started",
             Local::now().format("%H:%M:%S")
         );
 
@@ -188,43 +187,3 @@ pub struct TaskChannelReceiver(pub Receiver<TaskChannelEvent>);
 
 #[derive(Resource, Debug)]
 pub struct TaskChannelSender(pub Sender<TaskChannelEvent>);
-
-/// Resource used to keep track of process file.
-/// - Is user editing an existing process?
-/// - Is user using application without any process file?
-#[derive(Resource, Debug, Default)]
-pub struct ProcessFileState {
-    pub editing_existing_process: bool,
-    pub currernt_process_path: Option<PathBuf>,
-    pub file_needs_to_be_saved: bool
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-pub struct OperatorFormat {
-    pub transform_x: f32,
-    pub transform_y: f32,
-    pub op_object: Operator
-}
-
-impl OperatorFormat {
-    pub fn new(translation: Vec2, op: &Operator) -> Self {
-        Self {
-            transform_x: translation.x,
-            transform_y: translation.y,
-            op_object: op.clone()
-        }
-    }
-}
-
-#[derive(Deserialize, Serialize)]
-pub struct ProcessFileFormat {
-    pub operators: Vec<OperatorFormat>,
-    pub file_name: String
-}
-
-/// A resource used to store the path of selected destination
-/// when user want to save new process (Save process as).
-#[derive(Resource, Debug, Default)]
-pub struct SaveProcessAsBackgroundThreadReceiver {
-    pub receiver: Option<Receiver<Option<PathBuf>>>
-}
