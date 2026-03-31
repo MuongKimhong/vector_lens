@@ -90,3 +90,14 @@ pub fn write_file(path: PathBuf, data: &[u8]) -> std::io::Result<()> {
     writer.write_all(data)?;
     Ok(())
 }
+
+pub fn is_control_key_held(keys: &Res<ButtonInput<KeyCode>>) -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        keys.pressed(KeyCode::SuperLeft) || keys.pressed(KeyCode::SuperRight)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight)
+    }
+}

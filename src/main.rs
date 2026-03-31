@@ -4,6 +4,7 @@ pub mod canvas;
 pub mod operators;
 pub mod utils;
 pub mod resources;
+pub mod messages;
 
 pub use io::*;
 pub use ui::*;
@@ -11,6 +12,7 @@ pub use canvas::*;
 pub use operators::*;
 pub use utils::*;
 pub use resources::*;
+pub use messages::*;
 
 use bevy::prelude::*;
 

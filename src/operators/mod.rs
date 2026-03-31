@@ -1,8 +1,6 @@
-pub mod messages;
 pub mod category;
 pub mod op;
 
-pub use messages::*;
 pub use category::*;
 pub use op::*;
 
@@ -15,6 +13,7 @@ use polars::prelude::{DataFrame};
 
 use std::collections::HashMap;
 use crate::resources::*;
+use crate::messages::*;
 
 pub struct OperatorPlugin;
 
@@ -22,6 +21,7 @@ impl Plugin for OperatorPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<ToggleOpContext>();
         app.add_message::<ConstructConnectedCurvesAfterOpenProcess>();
+
         app.add_systems(
             Update,
             (

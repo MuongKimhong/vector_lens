@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use makara::prelude::*;
 use uuid::Uuid;
 
-use crate::{operators::messages::*, OpBox, OperatorInUseList};
+use crate::{messages::*, OpBox, OperatorInUseList};
 use super::*;
 
 /// Component use to store id of operator so that when deleting,

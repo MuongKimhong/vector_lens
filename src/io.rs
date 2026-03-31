@@ -2,11 +2,12 @@
 
 use serde::{Serialize, Deserialize};
 use bevy::prelude::*;
-use crossbeam_channel::{unbounded, Receiver};
+use bevy::input::{ButtonInput, keyboard::KeyCode};
+use crossbeam_channel::unbounded;
 use std::thread;
-use std::path::PathBuf;
 
 use crate::canvas::spawn_operator_entity;
+use crate::messages::*;
 use crate::operators::*;
 use crate::resources::*;
 use crate::utils::*;
@@ -19,13 +20,17 @@ impl Plugin for IoPlugin {
         app.insert_resource(SaveProcessAsBackgroundThreadReceiver::default());
         app.insert_resource(OpenProcessBackgroundThreadReceiver::default());
 
+        app.add_message::<SaveProcess>();
+
         app.add_systems(
             Update,
             (
                 handle_save_process_as_select_destination_receive_result_system,
                 handle_save_process_thread_receiver_result_system,
                 handle_open_process_choose_file_result_receiver,
-                handle_open_process_parse_content_result_receiver
+                handle_open_process_parse_content_result_receiver,
+                handle_save_process,
+                detect_ctrl_s_pressed_to_save_process
             )
         );
     }
@@ -112,7 +117,7 @@ pub fn handle_save_process_thread_receiver_result_system(
 
     if let Ok(result) = receiver.try_recv() {
         match result {
-            Ok(_) => console_log.new_message(log_success("New process has been saved")),
+            Ok(_) => console_log.new_message(log_success("Process has been saved")),
             Err(_) => console_log.new_message(log_error("Failed to save new process"))
         }
 
@@ -173,7 +178,7 @@ pub fn handle_open_process_parse_content_result_receiver(
         match result {
             Ok(content) => {
                 // despawn any existing operators
-                for (entity, op) in operator_q.iter() {
+                for (entity, _op) in operator_q.iter() {
                     commands.entity(entity).despawn();
                 }
 
@@ -206,5 +211,52 @@ pub fn handle_open_process_parse_content_result_receiver(
             }
         }
         thread_receiver.open_result_receiver = None;
+    }
+}
+
+pub fn handle_save_process(
+    mut messages: MessageReader<SaveProcess>,
+    mut thread_receiver: ResMut<SaveProcessAsBackgroundThreadReceiver>,
+    process_state: Res<ProcessFileState>,
+    operator_q: Query<(&GlobalTransform, &Operator)>
+) {
+    for _ in messages.read() {
+        if !process_state.can_save() {
+            continue;
+        }
+
+        if let Some(path) = &process_state.currernt_process_path {
+            let path = path.clone();
+            let op_formats = operator_q
+                .iter()
+                .map(|(transform, op)| {
+                    let translation = transform.translation().truncate();
+                    OperatorFormat::new(translation, op)
+                })
+                .collect::<Vec<OperatorFormat>>();
+
+            let process_file_format = ProcessFileFormat::new(op_formats, path.display().to_string());
+            let data = serde_json::to_string(&process_file_format);
+
+            if let Ok(data) = data {
+                let (sender, receiver) = unbounded::<std::io::Result<()>>();
+                thread_receiver.save_result_receiver = Some(receiver);
+
+                thread::spawn(move || {
+                    let _ = sender.send(write_file(path, data.as_bytes()));
+                });
+            }
+        }
+    }
+}
+
+pub fn detect_ctrl_s_pressed_to_save_process(
+    keys: Res<ButtonInput<KeyCode>>,
+    mut console_log: ResMut<ConsoleLog>,
+    mut msg: MessageWriter<SaveProcess>
+) {
+    if is_control_key_held(&keys) && keys.just_pressed(KeyCode::KeyS) {
+        console_log.new_message(log_normal("Saving process"));
+        msg.write(SaveProcess);
     }
 }

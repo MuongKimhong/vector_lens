@@ -7,6 +7,7 @@ use std::path::PathBuf;
 use std::thread;
 
 use crate::operators::{Operator, OpConnectButton};
+use crate::messages::*;
 use crate::io::*;
 use crate::resources::*;
 use crate::utils::*;
@@ -49,11 +50,11 @@ fn on_exit_btn_clicked(_: On<Clicked>, mut exit: MessageWriter<AppExit>) {
 
 fn on_save_process_btn_clicked(
     _: On<Clicked>,
-    mut process_state: ResMut<ProcessFileState>
+    mut console_log: ResMut<ConsoleLog>,
+    mut msg: MessageWriter<SaveProcess>
 ) {
-    if !process_state.editing_existing_process {
-        return;
-    }
+    console_log.new_message(log_normal("Saving process"));
+    msg.write(SaveProcess);
 }
 
 fn on_save_process_as_btn_clicked(

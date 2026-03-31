@@ -205,6 +205,10 @@ impl ProcessFileState {
         self.currernt_process_path = None;
         self.file_needs_to_be_saved = false;
     }
+
+    pub fn can_save(&self) -> bool {
+        self.editing_existing_process && self.currernt_process_path.is_some()
+    }
 }
 
 /// A resource used to store the path of selected destination
