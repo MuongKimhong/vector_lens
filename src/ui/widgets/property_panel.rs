@@ -8,6 +8,7 @@ use super::*;
 pub enum PropertyType {
     None,
     ReadCsv,
+    ReadExcel,
     ReplaceMissingValue
 }
 
@@ -82,6 +83,7 @@ pub fn handle_update_property_panel_content(
 
     let container_id = match panel_state.property_type {
         PropertyType::ReadCsv => "read-csv-property-container",
+        PropertyType::ReadExcel => "read-excel-property-container",
         PropertyType::ReplaceMissingValue => "replace-missing-value-property-container",
         _ => return
     };
@@ -111,6 +113,7 @@ pub fn property_panel() -> impl Bundle {
             ]),
 
             read_csv_property_container(),
+            read_excel_property_container(),
             replace_missing_value_property_container()
         ]
     )

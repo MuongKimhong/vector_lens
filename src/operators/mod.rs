@@ -66,6 +66,7 @@ pub enum PropertyValue {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum OperatorKind {
     ReadCSV,
+    ReadExcel,
     ReplaceMissingValue
 }
 
@@ -155,14 +156,15 @@ impl Operator {
         thread_pool.spawn(async move {
             match kind {
                 OperatorKind::ReadCSV => handle_read_csv_operator_execution(&sender, &properties),
+                OperatorKind::ReadExcel => handle_read_excel_operator_execution(&sender, &properties),
                 OperatorKind::ReplaceMissingValue => {
                     // Do math on `input_data` based on `properties`
                     println!("start executing replace missing value");
                     std::thread::sleep(std::time::Duration::from_secs(5));
                     println!("finished executing replace missing value");
                     DataValue::Table(DataFrame::empty())
-                }
-                // ...
+                },
+                _ => DataValue::None
             }
         })
     }

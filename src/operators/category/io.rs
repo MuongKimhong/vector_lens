@@ -57,3 +57,26 @@ pub fn handle_read_csv_operator_execution(
         }
     }
 }
+
+pub fn read_excel_operator() -> Operator {
+    Operator::new(
+        "Read Excel",
+        OperatorKind::ReadExcel,
+        DataValue::None,
+        DataValue::Table(DataFrame::empty()),
+        OperatorCategory::IO,
+        HashMap::from([
+            ("file_path".to_string(), PropertyValue::String("".to_string()))
+        ])
+    )
+}
+
+pub fn handle_read_excel_operator_execution(
+    task_sender: &Sender<TaskChannelEvent>,
+    properties: &HashMap<String, PropertyValue>
+) -> DataValue {
+
+    // implemention goes here. It will be similar to handle_read_csv_operator_execution
+
+    DataValue::None // just a dummy return, pls remove this.
+}
