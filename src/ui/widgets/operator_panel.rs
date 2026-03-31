@@ -80,7 +80,7 @@ pub fn operator_panel(operator_list: &OperatorList) -> impl Bundle {
                                         mut operator_in_use: ResMut<OperatorInUseList>
                                     | {
                                         let mut new_op = Operator::new_from(&op);
-                                        let entity = spawn_operator_entity(&mut commands, &mut meshes, &mut materials, &new_op);
+                                        let entity = spawn_operator_entity(&mut commands, &mut meshes, &mut materials, &new_op, None);
                                         new_op.entity = Some(entity);
 
                                         operator_in_use.0.push(new_op);

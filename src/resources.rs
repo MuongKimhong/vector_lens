@@ -5,6 +5,7 @@ use chrono::Local;
 use uuid::Uuid;
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 use super::*;
 
 #[derive(Default, Debug)]
@@ -187,3 +188,35 @@ pub struct TaskChannelReceiver(pub Receiver<TaskChannelEvent>);
 
 #[derive(Resource, Debug)]
 pub struct TaskChannelSender(pub Sender<TaskChannelEvent>);
+
+/// Resource used to keep track of process file.
+/// - Is user editing an existing process?
+/// - Is user using application without any process file?
+#[derive(Resource, Debug, Default)]
+pub struct ProcessFileState {
+    pub editing_existing_process: bool,
+    pub currernt_process_path: Option<PathBuf>,
+    pub file_needs_to_be_saved: bool
+}
+
+impl ProcessFileState {
+    pub fn reset(&mut self) {
+        self.editing_existing_process = false;
+        self.currernt_process_path = None;
+        self.file_needs_to_be_saved = false;
+    }
+}
+
+/// A resource used to store the path of selected destination
+/// when user want to save new process (Save process as).
+#[derive(Resource, Debug, Default)]
+pub struct SaveProcessAsBackgroundThreadReceiver {
+    pub destination_receiver: Option<Receiver<Option<PathBuf>>>,
+    pub save_result_receiver: Option<Receiver<std::io::Result<()>>>,
+}
+
+#[derive(Resource, Debug, Default)]
+pub struct OpenProcessBackgroundThreadReceiver {
+    pub choose_file_receiver: Option<Receiver<Option<PathBuf>>>,
+    pub open_result_receiver: Option<Receiver<Result<ProcessFileFormat, serde_json::Error>>>
+}

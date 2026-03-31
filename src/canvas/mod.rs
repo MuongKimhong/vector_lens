@@ -3,6 +3,7 @@ use bevy::window::{CursorIcon, SystemCursorIcon};
 use bevy::prelude::*;
 use makara::prelude::*;
 use std::f32::consts::PI;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::*;
@@ -17,7 +18,8 @@ impl Plugin for CanvasPlugin {
             draw_temp_gizmo_connection_curve_system,
             draw_connected_gizmo_curve_system,
             detect_mouse_press_to_cancel_connection_system,
-            detect_mouse_over_connected_curves
+            detect_mouse_over_connected_curves,
+            handle_construct_curves_after_open_process_system
         ));
     }
 }
@@ -26,7 +28,8 @@ pub fn spawn_operator_entity(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
-    op: &Operator
+    op: &Operator,
+    translation: Option<Vec2>
 ) -> Entity {
     let rect = meshes.add(Rectangle::new(OPERATOR_SIZE.x, OPERATOR_SIZE.y));
 
@@ -45,7 +48,7 @@ pub fn spawn_operator_entity(
         .spawn((
             Mesh2d(rect),
             MeshMaterial2d(materials.add(rgb(0.0, 0.0, 1.0))),
-            Transform::from_xyz(100.0, 100.0, 0.0),
+            // Transform::from_xyz(100.0, 100.0, 0.0),
             OpBox::new(op.id, &op.name),
             OperatorNameEntity(op_name_entity),
             op.clone()
@@ -54,6 +57,13 @@ pub fn spawn_operator_entity(
         .observe(on_op_right_clicked)
         .observe(on_op_clicked)
         .id();
+
+    if let Some(trans) = translation {
+        commands.entity(op_entity).insert(Transform::from_xyz(trans.x, trans.y, 0.0));
+    }
+    else {
+        commands.entity(op_entity).insert(Transform::from_xyz(100.0, 100.0, 0.0));
+    }
 
     let mut input_button_entity: Option<Entity> = None;
 
@@ -95,7 +105,13 @@ pub fn spawn_operator_entity(
     ))
     .id();
 
-    commands.entity(op_entity).add_children(&[op_name_entity, output_button_entity]);
+    commands
+        .entity(op_entity)
+        .insert(OpInputOutputButtonEntity {
+            input_button_entity: input_button_entity,
+            output_button_entity: Some(output_button_entity)
+        })
+        .add_children(&[op_name_entity, output_button_entity]);
 
     if let Some(input_button_entity) = input_button_entity {
         commands.entity(op_entity).add_child(input_button_entity);
@@ -209,9 +225,14 @@ fn on_input_button_clicked(
             });
 
             let mut next_op_entity: Option<Entity> = None;
+            let mut next_op_id: Option<Uuid> = None;
 
             if let Ok(op_entity) = operator_button_q.get(clicked.entity) {
                 next_op_entity = Some(op_entity.0);
+
+                if let Ok(op) = operator_q.get(op_entity.0) {
+                    next_op_id = Some(op.id);
+                }
             }
 
             if let Ok(op_entity) = operator_button_q.get(output_button_entity) {
@@ -219,6 +240,7 @@ fn on_input_button_clicked(
                     op.is_first_operator = false; // mark it as false first
 
                     op.next_operator = next_op_entity;
+                    op.next_operator_id = next_op_id;
 
                     // if an op doesn't have input data, mark it as head or first operator
                     if op.input == DataValue::None {
@@ -232,6 +254,43 @@ fn on_input_button_clicked(
     }
 
     clicked.propagate(false);
+}
+
+pub fn handle_construct_curves_after_open_process_system(
+    mut messages: MessageReader<ConstructConnectedCurvesAfterOpenProcess>,
+    mut connected_curves: ResMut<ConnectedCurves>,
+    mut operator_q: Query<(Entity, &mut Operator, &OpInputOutputButtonEntity)>,
+    lookup: Query<&OpInputOutputButtonEntity>,
+    operator_in_use: Res<OperatorInUseList>
+) {
+    for _ in messages.read() {
+        let op_map: HashMap<_, _> = operator_in_use.0.iter()
+            .map(|op| (op.id, op.entity))
+            .collect();
+
+        for (_, mut op, buttons) in operator_q.iter_mut() {
+            if let Some(next_id) = op.next_operator_id {
+                if let Some(next_op_entity) = op_map.get(&next_id) {
+                    op.next_operator = *next_op_entity;
+                }
+            }
+
+            op.is_first_operator = op.input == DataValue::None;
+
+            // hold entity of input and output btn
+            let connection = op.next_operator
+                .and_then(|next_ent| lookup.get(next_ent).ok())
+                .and_then(|next_btns| buttons.output_button_entity.zip(next_btns.input_button_entity));
+
+            if let Some((out_entity, in_entity)) = connection {
+                connected_curves.0.push(Connection {
+                    id: Uuid::new_v4(),
+                    out_entity,
+                    in_entity,
+                });
+            }
+        }
+    }
 }
 
 fn on_input_button_mouse_over(

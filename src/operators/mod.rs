@@ -21,6 +21,7 @@ pub struct OperatorPlugin;
 impl Plugin for OperatorPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<ToggleOpContext>();
+        app.add_message::<ConstructConnectedCurvesAfterOpenProcess>();
         app.add_systems(
             Update,
             (
@@ -85,6 +86,12 @@ pub struct OperatorEntity(pub Entity);
 #[derive(Component, Debug, Clone)]
 pub struct OperatorNameEntity(pub Entity);
 
+#[derive(Component, Debug, Clone)]
+pub struct OpInputOutputButtonEntity {
+    pub input_button_entity: Option<Entity>,
+    pub output_button_entity: Option<Entity>
+}
+
 // An operator acts like a linked-list. It contains the next operator entity.
 // It's easy to know which operator will get executed next.
 #[derive(Component, Debug, Clone, Deserialize, Serialize)]
@@ -97,6 +104,7 @@ pub struct Operator {
     pub kind: OperatorKind,
     pub entity: Option<Entity>,
     pub next_operator: Option<Entity>,
+    pub next_operator_id: Option<Uuid>,
     pub is_first_operator: bool,
     pub properties: HashMap<String, PropertyValue>
 }
@@ -119,6 +127,7 @@ impl Operator {
             category,
             properties,
             next_operator: None,
+            next_operator_id: None,
             is_first_operator: false,
             entity: None,
         }

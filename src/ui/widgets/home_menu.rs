@@ -74,4 +74,18 @@ fn on_save_process_as_btn_clicked(
     });
 }
 
-fn on_open_process_btn_clicked(_: On<Clicked>) {}
+fn on_open_process_btn_clicked(
+    _: On<Clicked>,
+    mut thread_receiver: ResMut<OpenProcessBackgroundThreadReceiver>
+) {
+    let (sender, receiver) = unbounded::<Option<PathBuf>>();
+    thread_receiver.choose_file_receiver = Some(receiver);
+
+    thread::spawn(move || {
+        let file_result = FileDialog::new()
+            .set_directory("/")
+            .pick_file();
+
+        let _ = sender.send(file_result);
+    });
+}

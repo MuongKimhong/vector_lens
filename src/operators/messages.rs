@@ -30,3 +30,6 @@ impl ToggleOpContext {
         }
     }
 }
+
+#[derive(Message)]
+pub struct ConstructConnectedCurvesAfterOpenProcess;

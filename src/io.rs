@@ -6,6 +6,7 @@ use crossbeam_channel::{unbounded, Receiver};
 use std::thread;
 use std::path::PathBuf;
 
+use crate::canvas::spawn_operator_entity;
 use crate::operators::*;
 use crate::resources::*;
 use crate::utils::*;
@@ -16,35 +17,19 @@ impl Plugin for IoPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(ProcessFileState::default());
         app.insert_resource(SaveProcessAsBackgroundThreadReceiver::default());
+        app.insert_resource(OpenProcessBackgroundThreadReceiver::default());
 
         app.add_systems(
             Update,
             (
                 handle_save_process_as_select_destination_receive_result_system,
-                handle_save_process_thread_receiver_result_system
+                handle_save_process_thread_receiver_result_system,
+                handle_open_process_choose_file_result_receiver,
+                handle_open_process_parse_content_result_receiver
             )
         );
     }
 }
-
-/// Resource used to keep track of process file.
-/// - Is user editing an existing process?
-/// - Is user using application without any process file?
-#[derive(Resource, Debug, Default)]
-pub struct ProcessFileState {
-    pub editing_existing_process: bool,
-    pub currernt_process_path: Option<PathBuf>,
-    pub file_needs_to_be_saved: bool
-}
-
-/// A resource used to store the path of selected destination
-/// when user want to save new process (Save process as).
-#[derive(Resource, Debug, Default)]
-pub struct SaveProcessAsBackgroundThreadReceiver {
-    pub destination_receiver: Option<Receiver<Option<PathBuf>>>,
-    pub save_result_receiver: Option<Receiver<std::io::Result<()>>>,
-}
-
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OperatorFormat {
@@ -63,7 +48,7 @@ impl OperatorFormat {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct ProcessFileFormat {
     pub operators: Vec<OperatorFormat>,
     pub file_name: String
@@ -132,5 +117,94 @@ pub fn handle_save_process_thread_receiver_result_system(
         }
 
         thread_receiver.save_result_receiver = None;
+    }
+}
+
+pub fn handle_open_process_choose_file_result_receiver(
+    mut thread_receiver: ResMut<OpenProcessBackgroundThreadReceiver>,
+    mut process_file_state: ResMut<ProcessFileState>,
+    mut console_log: ResMut<ConsoleLog>
+) {
+    let Some(receiver) = &thread_receiver.choose_file_receiver else {
+        return;
+    };
+
+    if let Ok(result) = receiver.try_recv() {
+        match result {
+            Some(path) => {
+                console_log.new_message(log_normal("Opening process"));
+
+                let (sender, receiver) = unbounded::<Result<ProcessFileFormat, serde_json::Error>>();
+                thread_receiver.open_result_receiver = Some(receiver);
+
+                process_file_state.currernt_process_path = Some(path.clone());
+
+                thread::spawn(move || {
+                    // let _ = sender.send()
+                    if let Ok(content) = std::fs::read_to_string(path) {
+                        let process_format = serde_json::from_str::<ProcessFileFormat>(&content);
+                        let _ = sender.send(process_format);
+                    }
+                });
+            }
+            _ => console_log.new_message(log_error("Failed to open process file"))
+        }
+        thread_receiver.choose_file_receiver = None;
+    }
+}
+
+pub fn handle_open_process_parse_content_result_receiver(
+    mut thread_receiver: ResMut<OpenProcessBackgroundThreadReceiver>,
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut op_in_use: ResMut<OperatorInUseList>,
+    mut connected_curves: ResMut<ConnectedCurves>,
+    mut msg_writer: MessageWriter<ConstructConnectedCurvesAfterOpenProcess>,
+    mut process_file_state: ResMut<ProcessFileState>,
+    mut console_log: ResMut<ConsoleLog>,
+    operator_q: Query<(Entity, &Operator)>,
+) {
+    let Some(receiver) = &thread_receiver.open_result_receiver else {
+        return;
+    };
+
+    if let Ok(result) = receiver.try_recv() {
+        match result {
+            Ok(content) => {
+                // despawn any existing operators
+                for (entity, op) in operator_q.iter() {
+                    commands.entity(entity).despawn();
+                }
+
+                // empty operator in use resource and connected curves
+                op_in_use.0 = Vec::new();
+                connected_curves.0 = Vec::new();
+
+                // spawn entity at exact translation
+                for op in content.operators.iter() {
+                    let mut new_op = op.op_object.clone();
+                    let op_entity = spawn_operator_entity(
+                        &mut commands,
+                        &mut meshes,
+                        &mut materials,
+                        &op.op_object,
+                        Some(Vec2::new(op.transform_x, op.transform_y))
+                    );
+                    new_op.entity = Some(op_entity);
+                    op_in_use.0.push(new_op);
+                }
+
+                // send event to construct connected curves
+                msg_writer.write(ConstructConnectedCurvesAfterOpenProcess);
+
+                process_file_state.editing_existing_process = true;
+            }
+            Err(e) => {
+                process_file_state.reset();
+                console_log.new_message(log_error(&format!("{e}")));
+            }
+        }
+        thread_receiver.open_result_receiver = None;
     }
 }
