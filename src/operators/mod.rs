@@ -67,6 +67,7 @@ pub enum PropertyValue {
 pub enum OperatorKind {
     ReadCSV,
     ReadExcel,
+    SaveCSVOrExcel,
     ReplaceMissingValue
 }
 
@@ -149,7 +150,7 @@ impl Operator {
         // We MUST clone the data the background thread needs.
         // You cannot pass `&mut self` into a background thread!
         let kind = self.kind.clone();
-        let input_data = self.input.clone();
+        let input = self.input.clone();
         let properties = self.properties.clone();
         let sender = task_sender.clone();
 
@@ -157,6 +158,7 @@ impl Operator {
             match kind {
                 OperatorKind::ReadCSV => handle_read_csv_operator_execution(&sender, &properties),
                 OperatorKind::ReadExcel => handle_read_excel_operator_execution(&sender, &properties),
+                OperatorKind::SaveCSVOrExcel => handle_save_csv_or_excel_operator_execution(&sender, &input, &properties),
                 OperatorKind::ReplaceMissingValue => {
                     // Do math on `input_data` based on `properties`
                     println!("start executing replace missing value");

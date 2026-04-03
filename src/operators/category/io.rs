@@ -1,7 +1,9 @@
 use crossbeam_channel::Sender;
-use polars::prelude::{CsvReadOptions, DataFrame, SerReader};
+use polars::prelude::{CsvReadOptions, CsvWriter, DataFrame, SerReader, SerWriter};
+use polars_excel_writer::PolarsExcelWriter;
+use std::{fs::File, path::Path};
 
-use crate::utils::{log_error, log_normal};
+use crate::utils::{log_error, log_normal, log_success};
 use super::*;
 
 pub fn read_csv_operator() -> Operator {
@@ -21,7 +23,7 @@ pub fn handle_read_csv_operator_execution(
     task_sender: &Sender<TaskChannelEvent>,
     properties: &HashMap<String, PropertyValue>
 ) -> DataValue {
-    let _ =task_sender.send(TaskChannelEvent::LogMessage(
+    let _ = task_sender.send(TaskChannelEvent::LogMessage(
         log_normal("[Read CSV] Started reading CSV file")
     ));
 
@@ -79,4 +81,156 @@ pub fn handle_read_excel_operator_execution(
     // implemention goes here. It will be similar to handle_read_csv_operator_execution
 
     DataValue::None // just a dummy return, pls remove this.
+}
+
+pub fn save_csv_or_excel_operator() -> Operator {
+    Operator::new(
+        "Save to CSV or Excel",
+        OperatorKind::SaveCSVOrExcel,
+        DataValue::Table(DataFrame::empty()),
+        DataValue::None,
+        OperatorCategory::IO,
+        HashMap::from([
+            ("file_path".to_string(), PropertyValue::String("".to_string())),
+            ("file_name".to_string(), PropertyValue::String("".to_string())),
+            ("file_type".to_string(), PropertyValue::String("".to_string()))
+        ])
+    )
+}
+
+fn handle_write_to_csv_helper(
+    input: &DataValue,
+    task_sender: &Sender<TaskChannelEvent>,
+    file: &mut File
+) -> DataValue {
+    match input {
+        DataValue::Table(df) => {
+            let mut df_clone = df.clone();
+
+            match CsvWriter::new(file).include_header(true).with_separator(b',').finish(&mut df_clone) {
+                Ok(_) => {
+                    let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                        log_normal(&format!("[Save to Csv or Excel] Saved to Csv file"))
+                    ));
+                    return DataValue::None;
+                }
+                Err(e) => {
+                    let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                        log_error(&format!("[Save to Csv or Excel] {e}"))
+                    ));
+                    return DataValue::Error;
+                }
+            }
+        }
+        _ => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error(&format!("[Save to Csv or Excel] Failed to save to Csv"))
+            ));
+            return DataValue::Error;
+        }
+    }
+}
+
+fn handle_write_to_excel_helper(
+    input: &DataValue,
+    full_path: &str,
+    task_sender: &Sender<TaskChannelEvent>
+) -> DataValue {
+    match input {
+        DataValue::Table(df) => {
+            let mut excel_writer = PolarsExcelWriter::new();
+
+            if let Err(e) = excel_writer.write_dataframe(&df) {
+                let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                    log_error(&format!("[Save to Csv or Excel] {e}"))
+                ));
+                return DataValue::Error;
+            }
+
+            if let Err(e) = excel_writer.save(full_path) {
+                let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                    log_error(&format!("[Save to Csv or Excel] {e}"))
+                ));
+                return DataValue::Error;
+            }
+
+            return DataValue::None;
+        }
+        _ => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error(&format!("[Save to Csv or Excel] Failed to save to Csv"))
+            ));
+            return DataValue::Error;
+        }
+    }
+}
+
+pub fn handle_save_csv_or_excel_operator_execution(
+    task_sender: &Sender<TaskChannelEvent>,
+    input: &DataValue,
+    properties: &HashMap<String, PropertyValue>
+) -> DataValue {
+    let file_type = match properties.get("file_type") {
+        Some(PropertyValue::String(s)) => s,
+        _ => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error("[Save to Csv or Excel] Invalid file type")
+            ));
+            return DataValue::Error;
+        }
+    };
+
+    let file_path = match properties.get("file_path") {
+        Some(PropertyValue::String(s)) => s,
+        _ => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error("[Save to Csv or Excel] Invalid destination")
+            ));
+            return DataValue::Error;
+        }
+    };
+
+    let file_name = match properties.get("file_name") {
+        Some(PropertyValue::String(s)) => s,
+        _ => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error("[Save to Csv or Excel] Invalid file name")
+            ));
+            return DataValue::Error;
+        }
+    };
+
+    if file_name.is_empty() {
+        let _ = task_sender.send(TaskChannelEvent::LogMessage(
+            log_error("[Save to Csv or Excel] Invalid file name")
+        ));
+        return DataValue::Error;
+    }
+
+    let _ = task_sender.send(TaskChannelEvent::LogMessage(
+        log_normal(&format!("[Save to Csv or Excel] Saving content to {file_type} file"))
+    ));
+
+    let extension = if file_type == "Csv" { ".csv" } else { ".xlsx" };
+    let full_path = Path::new(file_path)
+        .join(&format!("{file_name}{extension}"))
+        .to_string_lossy()
+        .into_owned();
+
+    match std::fs::File::create(&full_path) {
+        Ok(mut f) => {
+            if extension == ".csv" {
+                return handle_write_to_csv_helper(input, task_sender, &mut f);
+            }
+            else {
+                return handle_write_to_excel_helper(input, &full_path, task_sender);
+            }
+        }
+        Err(e) => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error(&format!("[Save to Csv or Excel] {e}"))
+            ));
+            return DataValue::Error;
+        }
+    }
 }

@@ -7,6 +7,7 @@ use crossbeam_channel::unbounded;
 use std::thread;
 
 use crate::canvas::spawn_operator_entity;
+use crate::ui::widgets::PropertyPanelShowState;
 use crate::messages::*;
 use crate::operators::*;
 use crate::resources::*;
@@ -19,6 +20,7 @@ impl Plugin for IoPlugin {
         app.insert_resource(ProcessFileState::default());
         app.insert_resource(SaveProcessAsBackgroundThreadReceiver::default());
         app.insert_resource(OpenProcessBackgroundThreadReceiver::default());
+        app.insert_resource(SaveCsvOrExcelBackgroundThreadReceiver::default());
 
         app.add_message::<SaveProcess>();
 
@@ -29,6 +31,7 @@ impl Plugin for IoPlugin {
                 handle_save_process_thread_receiver_result_system,
                 handle_open_process_choose_file_result_receiver,
                 handle_open_process_parse_content_result_receiver,
+                handle_save_to_csv_or_excel_select_destination_receive_result_system,
                 handle_save_process,
                 detect_ctrl_s_pressed_to_save_process
             )
@@ -122,6 +125,33 @@ pub fn handle_save_process_thread_receiver_result_system(
         }
 
         thread_receiver.save_result_receiver = None;
+    }
+}
+
+pub fn handle_save_to_csv_or_excel_select_destination_receive_result_system(
+    mut thread_receiver: ResMut<SaveCsvOrExcelBackgroundThreadReceiver>,
+    mut operator_q: Query<&mut Operator>,
+    panel_state: Res<PropertyPanelShowState>,
+) {
+    let Some(receiver) = &thread_receiver.destination_receiver else {
+        return;
+    };
+
+    if let Ok(result) = receiver.try_recv() {
+        match result {
+            Some(path) => if let Some(op_entity) = panel_state.op_entity {
+                if let Ok(mut op) = operator_q.get_mut(op_entity) {
+                    op.properties.insert(
+                        "file_path".to_string(),
+                        PropertyValue::String(path.display().to_string())
+                    );
+                }
+            }
+            _ => {}
+        }
+
+        // user finished selecting destionation or cancelled, no longer need receiver
+        thread_receiver.destination_receiver = None;
     }
 }
 

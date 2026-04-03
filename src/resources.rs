@@ -64,6 +64,7 @@ impl OperatorList {
         vec![
             read_csv_operator(),
             read_excel_operator(),
+            save_csv_or_excel_operator(),
             replace_missing_value_operator()
         ]
     }
@@ -224,4 +225,11 @@ pub struct SaveProcessAsBackgroundThreadReceiver {
 pub struct OpenProcessBackgroundThreadReceiver {
     pub choose_file_receiver: Option<Receiver<Option<PathBuf>>>,
     pub open_result_receiver: Option<Receiver<Result<ProcessFileFormat, serde_json::Error>>>
+}
+
+/// A resource used to store the path of selected destination
+/// when user want to save to csv or excel using "Save to Csv or Excel" operator
+#[derive(Resource, Debug, Default)]
+pub struct SaveCsvOrExcelBackgroundThreadReceiver {
+    pub destination_receiver: Option<Receiver<Option<PathBuf>>>,
 }

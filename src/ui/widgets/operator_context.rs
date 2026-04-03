@@ -80,6 +80,7 @@ fn on_property_btn_clicked(
             panel_state.property_type = match op_box.name.as_str() {
                 "Read CSV" => PropertyType::ReadCsv,
                 "Read Excel" => PropertyType::ReadExcel,
+                "Save to CSV or Excel" => PropertyType::SaveCsvOrExcel,
                 "Replace missing value" => PropertyType::ReplaceMissingValue,
                 _ => PropertyType::None
             };
