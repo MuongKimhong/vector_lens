@@ -17,8 +17,9 @@ pub enum PropertyType {
 pub struct PropertyPanelShowState {
     pub state: bool,
     pub op_id: Option<Uuid>,
+    pub op_name: Option<String>,
     pub op_entity: Option<Entity>,
-    pub property_type: PropertyType
+    pub property_type: PropertyType,
 }
 
 impl PropertyPanelShowState {
@@ -26,6 +27,7 @@ impl PropertyPanelShowState {
         Self {
             state: false,
             op_id: None,
+            op_name: None,
             op_entity: None,
             property_type: PropertyType::None
         }
@@ -34,6 +36,7 @@ impl PropertyPanelShowState {
     pub fn reset(&mut self) {
         self.state = false;
         self.op_id = None;
+        self.op_name = None;
         self.op_entity = None;
         self.property_type = PropertyType::None;
     }
@@ -75,7 +78,8 @@ pub fn handle_show_and_hide_property_panel(
 }
 
 pub fn handle_update_property_panel_content(
-    mut container_q: Query<(&Id, &Class, &mut Node), With<MakaraColumn>>,
+    mut container_q: Query<(&Id, &Class, &mut Node), (With<MakaraColumn>, Without<MakaraText>)>,
+    mut text_q: TextQuery,
     panel_state: Res<PropertyPanelShowState>,
 ) {
     if !panel_state.is_changed() {
@@ -97,6 +101,12 @@ pub fn handle_update_property_panel_content(
 
         if id.0 == container_id {
             node.display = Display::default();
+
+            if let Some(text) = text_q.find_by_id("property-op-name") {
+                if let Some(name) = &panel_state.op_name {
+                    text.text.value.0 = name.to_owned();
+                }
+            }
         }
         else {
             node.display = Display::None;
@@ -113,6 +123,8 @@ pub fn property_panel() -> impl Bundle {
                 text_!("Property", font_size: 14.0),
                 button_!("x", class: "is-light"; on: on_close_button_clicked)
             ]),
+
+            text_!("", id: "property-op-name", font_size: 14.0, justify_content: JustifyContent::Center),
 
             scroll_!(height: percent(100), padding_x: px(5), [
                 read_csv_property_container(),

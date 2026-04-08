@@ -76,6 +76,7 @@ fn on_property_btn_clicked(
 
             panel_state.show();
             panel_state.op_id = Some(op_id);
+            panel_state.op_name = Some(op_box.name.clone());
             panel_state.op_entity = Some(entity);
             panel_state.property_type = match op_box.name.as_str() {
                 "Read CSV" => PropertyType::ReadCsv,
