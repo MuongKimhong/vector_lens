@@ -21,13 +21,15 @@ impl Plugin for OperatorPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<ToggleOpContext>();
         app.add_message::<ConstructConnectedCurvesAfterOpenProcess>();
+        app.add_message::<UpdateReplaceMissingValuePropertyAfterOPSpawned>();
 
         app.add_systems(
             Update,
             (
                 handle_op_background_execution_system,
                 handle_insert_task_channel_resource_system,
-                listen_to_task_channel_receiver_system
+                listen_to_task_channel_receiver_system,
+                handle_update_rmv_property_after_op_spawned
             )
         );
     }
@@ -61,9 +63,10 @@ pub enum PropertyValue {
     Float(f32),
     Bool(bool),
     List(Vec<PropertyValue>),
+    Map(HashMap<String, PropertyValue>)
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum OperatorKind {
     ReadCSV,
     ReadExcel,
@@ -156,16 +159,24 @@ impl Operator {
 
         thread_pool.spawn(async move {
             match kind {
-                OperatorKind::ReadCSV => handle_read_csv_operator_execution(&sender, &properties),
-                OperatorKind::ReadExcel => handle_read_excel_operator_execution(&sender, &properties),
-                OperatorKind::SaveCSVOrExcel => handle_save_csv_or_excel_operator_execution(&sender, &input, &properties),
-                OperatorKind::ReplaceMissingValue => {
-                    // Do math on `input_data` based on `properties`
-                    println!("start executing replace missing value");
-                    std::thread::sleep(std::time::Duration::from_secs(5));
-                    println!("finished executing replace missing value");
-                    DataValue::Table(DataFrame::empty())
-                },
+                OperatorKind::ReadCSV => handle_read_csv_operator_execution(
+                    &sender,
+                    &properties
+                ),
+                OperatorKind::ReadExcel => handle_read_excel_operator_execution(
+                    &sender,
+                    &properties
+                ),
+                OperatorKind::SaveCSVOrExcel => handle_save_csv_or_excel_operator_execution(
+                    &sender,
+                    &input,
+                    &properties
+                ),
+                OperatorKind::ReplaceMissingValue => handle_replace_missing_value_operator_execution(
+                    &sender,
+                    &input,
+                    &properties
+                ),
                 _ => DataValue::None
             }
         })

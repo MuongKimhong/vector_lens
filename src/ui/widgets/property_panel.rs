@@ -114,14 +114,15 @@ pub fn property_panel() -> impl Bundle {
                 button_!("x", class: "is-light"; on: on_close_button_clicked)
             ]),
 
-            read_csv_property_container(),
-            read_excel_property_container(),
-            save_to_csv_or_excel_property_container(),
-            replace_missing_value_property_container()
+            scroll_!(height: percent(100), padding_x: px(5), [
+                read_csv_property_container(),
+                read_excel_property_container(),
+                save_to_csv_or_excel_property_container(),
+                replace_missing_value_property_container()
+            ])
         ]
     )
 }
-
 
 fn on_close_button_clicked(_: On<Clicked>, mut panel_state: ResMut<PropertyPanelShowState>) {
     panel_state.toggle();

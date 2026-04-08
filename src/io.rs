@@ -1,9 +1,11 @@
 /// Anything related to Saving process and opening process file.
 
 use serde::{Serialize, Deserialize};
+use makara::prelude::*;
 use bevy::prelude::*;
 use bevy::input::{ButtonInput, keyboard::KeyCode};
 use crossbeam_channel::unbounded;
+use std::collections::HashMap;
 use std::thread;
 
 use crate::canvas::spawn_operator_entity;
@@ -21,6 +23,7 @@ impl Plugin for IoPlugin {
         app.insert_resource(SaveProcessAsBackgroundThreadReceiver::default());
         app.insert_resource(OpenProcessBackgroundThreadReceiver::default());
         app.insert_resource(SaveCsvOrExcelBackgroundThreadReceiver::default());
+        app.insert_resource(PreReadCsvOrExcelContentThreadReceiver::default());
 
         app.add_message::<SaveProcess>();
 
@@ -33,7 +36,8 @@ impl Plugin for IoPlugin {
                 handle_open_process_parse_content_result_receiver,
                 handle_save_to_csv_or_excel_select_destination_receive_result_system,
                 handle_save_process,
-                detect_ctrl_s_pressed_to_save_process
+                detect_ctrl_s_pressed_to_save_process,
+                pre_read_csv_content
             )
         );
     }
@@ -288,5 +292,128 @@ pub fn detect_ctrl_s_pressed_to_save_process(
     if is_control_key_held(&keys) && keys.just_pressed(KeyCode::KeyS) {
         console_log.new_message(log_normal("Saving process"));
         msg.write(SaveProcess);
+    }
+}
+
+fn on_missing_value_replace_with_selector_change(
+    change: On<Change<String>>,
+    mut operator_q: Query<&mut Operator>,
+    mut select_q: SelectQuery
+) {
+    if let Some(selector) = select_q.find_by_entity(change.entity) {
+        let class = selector.class.value.clone();
+        let Some(column_name) = class.split("-").last() else {
+            return;
+        };
+
+        for mut op in operator_q.iter_mut() {
+            if op.kind != OperatorKind::ReplaceMissingValue {
+                continue;
+            }
+
+            let Some(property) = op.properties.get_mut("columns_with_missing_value") else {
+                return;
+            };
+
+            match property {
+                PropertyValue::Map(map) => {
+                    map.insert(column_name.to_string(), PropertyValue::String(change.data.clone()));
+                }
+                _ => {}
+            }
+        }
+    }
+}
+
+// rmv = replace missing value
+pub fn handle_update_rmv_property_on_get_pre_read_content(
+    dirty_columns: &Vec<String>,
+    operator_q: &mut Query<&mut Operator>,
+    column_q: &mut ColumnQuery,
+    commands: &mut Commands
+) {
+    for mut op in operator_q.iter_mut() {
+        let Some(property) = op.properties.get_mut("columns_with_missing_value") else {
+            continue;
+        };
+        let mut map = HashMap::new();
+
+        let Some(column_widget) = column_q.find_by_id("missing-value-columns-wrapper") else {
+            return;
+        };
+        commands.entity(column_widget.entity).despawn_children();
+        commands.entity(column_widget.entity).with_children(|parent| {
+            for column in dirty_columns.iter() {
+                map.insert(column.clone(), PropertyValue::String("".to_string()));
+
+                parent.spawn(
+                    column_!(
+                        padding_top: px(6),
+                        padding_bottom: px(6),
+
+                        [
+                            text_!(column, id: &format!("missing-value-name-{column}")),
+                            select_!(
+                                "Replace with",
+                                choices: &[
+                                    "Null",
+                                    "Mean",
+                                    "Max",
+                                    "Min",
+                                    "Mode",
+                                    "Average",
+                                    "Forward Fill",
+                                    "Backward Fill",
+                                    "Unknown"
+                                ],
+                                class: &format!("missing-value-replace-with-{column}"),
+                                on: on_missing_value_replace_with_selector_change
+                            )
+                        ]
+                    )
+                );
+            }
+        });
+
+        if let Some(strategy_wrapper_column) = column_q.find_by_id("missing-value-strategies-wrapper") {
+            strategy_wrapper_column.style.node.display = Display::default();
+        }
+
+        *property = PropertyValue::Map(map);
+    }
+}
+
+pub fn pre_read_csv_content(
+    mut thread_receiver: ResMut<PreReadCsvOrExcelContentThreadReceiver>,
+    mut pre_read_content: ResMut<PreReadCsvOrExcelContent>,
+    mut operator_q: Query<&mut Operator>,
+    mut column_q: ColumnQuery,
+    mut commands: Commands
+) {
+    let Some(receiver) = &thread_receiver.get() else {
+        return;
+    };
+
+    if let Ok(result) = receiver.try_recv() {
+        if result == DataValue::None {
+            return;
+        }
+
+        match &result {
+            DataValue::Table(df) => {
+                if let Ok(columns) = get_dirty_column_names(&df) {
+                    handle_update_rmv_property_on_get_pre_read_content(
+                        &columns,
+                        &mut operator_q,
+                        &mut column_q,
+                        &mut commands
+                    );
+                }
+
+                pre_read_content.0 = result;
+                thread_receiver.0 = None;
+            }
+            _ => {}
+        }
     }
 }

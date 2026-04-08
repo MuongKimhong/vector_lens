@@ -36,3 +36,6 @@ pub struct ConstructConnectedCurvesAfterOpenProcess;
 
 #[derive(Message)]
 pub struct SaveProcess;
+
+#[derive(Message)]
+pub struct UpdateReplaceMissingValuePropertyAfterOPSpawned;

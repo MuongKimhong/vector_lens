@@ -233,3 +233,15 @@ pub struct OpenProcessBackgroundThreadReceiver {
 pub struct SaveCsvOrExcelBackgroundThreadReceiver {
     pub destination_receiver: Option<Receiver<Option<PathBuf>>>,
 }
+
+/// A resource used as background task thread receiver, to get dataframe
+/// content of "Read Csv" or "Read Excel". This resource is for this concept:
+///
+/// "Create a resource to hold dataframe of read csv and read excel.
+/// When user set file path property in these 2 operators, spawn
+/// a background task to pre read the content and put into the resource."
+#[derive(Resource, Debug, Default, Getter)]
+pub struct PreReadCsvOrExcelContentThreadReceiver(pub Option<Receiver<DataValue>>);
+
+#[derive(Resource, Debug, Default, Getter)]
+pub struct PreReadCsvOrExcelContent(pub DataValue);

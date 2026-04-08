@@ -79,8 +79,7 @@ pub fn setup_styles(mut styles: ResMut<CustomStyle>) {
             .border_radius(px(2))
     );
 
-    styles.bind_class(
-        "property-container",
-        Style::new().margin_top(px(20))
-    );
+    styles.bind_class("property-container", Style::new().margin_top(px(20)));
+
+    styles.bind_class("strategy-text", Style::new().font_size(10.0).padding_y(px(10)));
 }

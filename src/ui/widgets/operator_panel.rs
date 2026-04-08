@@ -4,6 +4,7 @@ use makara::prelude::*;
 use crate::resources::*;
 use crate::operators::*;
 use crate::canvas::*;
+use crate::messages::UpdateReplaceMissingValuePropertyAfterOPSpawned;
 
 #[derive(Resource, Debug)]
 pub struct OperatorPanelShowState(pub bool);
@@ -77,13 +78,15 @@ pub fn operator_panel(operator_list: &OperatorList) -> impl Bundle {
                                         mut commands: Commands,
                                         mut meshes: ResMut<Assets<Mesh>>,
                                         mut materials: ResMut<Assets<ColorMaterial>>,
-                                        mut operator_in_use: ResMut<OperatorInUseList>
+                                        mut operator_in_use: ResMut<OperatorInUseList>,
+                                        mut messages: MessageWriter<UpdateReplaceMissingValuePropertyAfterOPSpawned>
                                     | {
                                         let mut new_op = Operator::new_from(&op);
                                         let entity = spawn_operator_entity(&mut commands, &mut meshes, &mut materials, &new_op, None);
                                         new_op.entity = Some(entity);
 
                                         operator_in_use.0.push(new_op);
+                                        messages.write(UpdateReplaceMissingValuePropertyAfterOPSpawned);
                                     }
                                 ),
                             ]

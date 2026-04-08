@@ -25,5 +25,6 @@ fn main() {
         .insert_resource(OperatorInUseList::default())
         .insert_resource(OpLineConnectionState::default())
         .insert_resource(HoveredCurve::default())
+        .insert_resource(PreReadCsvOrExcelContent::default())
         .run();
 }

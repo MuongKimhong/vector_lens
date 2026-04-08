@@ -3,6 +3,7 @@ use chrono::Local;
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::{BufWriter, Write};
+use polars::prelude::{DataFrame, PolarsError, BooleanChunked, ChunkCompareEq, ChunkFull};
 
 use crate::resources::LogType;
 
@@ -100,4 +101,29 @@ pub fn is_control_key_held(keys: &Res<ButtonInput<KeyCode>>) -> bool {
     {
         keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight)
     }
+}
+
+/// Get columns with empty value or empty string
+pub fn get_dirty_column_names(df: &DataFrame) -> Result<Vec<String>, PolarsError> {
+    let mut dirty_columns = Vec::new();
+
+    for col_ref in df.columns() {
+        let name = col_ref.name();
+
+        let is_null_mask = col_ref.is_null();
+
+        let is_empty_mask = if let Ok(ca) = col_ref.str() {
+            ca.equal("")
+        } else {
+            BooleanChunked::full(name.clone(), false, col_ref.len())
+        };
+
+        let combined_mask = &is_null_mask | &is_empty_mask;
+
+        if combined_mask.any() {
+            dirty_columns.push(name.to_string());
+        }
+    }
+
+    Ok(dirty_columns)
 }
