@@ -234,3 +234,66 @@ pub fn handle_save_csv_or_excel_operator_execution(
         }
     }
 }
+
+pub fn append_csv_operator() -> Operator {
+    Operator::new(
+        "Append CSV",
+        OperatorKind::AppendCSV,
+        DataValue::Table(DataFrame::empty()),
+        DataValue::Table(DataFrame::empty()),
+        OperatorCategory::IO,
+        HashMap::from([
+            ("another_csv_file_path".to_string(), PropertyValue::String("".to_string()))
+        ])
+    )
+}
+
+pub fn handle_append_csv_operator_execution(
+    task_sender: &Sender<TaskChannelEvent>,
+    input: &DataValue,
+    properties: &HashMap<String, PropertyValue>
+) -> DataValue {
+    // Implementation goes here
+    //
+    // - PropertyValue definition:
+    // pub enum PropertyValue {
+    //     #[default]
+    //     None,
+    //     String(String),
+    //     Int(i32),
+    //     Float(f32),
+    //     Bool(bool),
+    //     List(Vec<PropertyValue>),
+    //     Map(HashMap<String, PropertyValue>)
+    // }
+    //
+    // - DataValue definition:
+    // #[derive(Debug, Default, Clone, PartialEq, Deserialize, Serialize)]
+    // pub enum DataValue {
+    //     #[default]
+    //     None,
+    //     Csv(String),
+    //     FilePath(String),
+    //     Table(DataFrame),
+    //     Model,
+    //     Error
+    // }
+    //
+    // - If encouters any errors log error message and return DataValue::Error :
+    // ```
+    // let _ = task_sender.send(TaskChannelEvent::LogMessage(
+    //     log_error("[Append CSV] {e}")
+    // ));
+    // return DataValue::Error;
+    // ```
+    //
+    // - When execution is completed without errors, log normal message and return DataFrame
+    // ```
+    // let _ = task_sender.send(TaskChannelEvent::LogMessage(
+    //     log_normal("[Append CSV] Appended CSV content")
+    // ));
+    // return DataValue::Table(df);
+    // ```
+
+    DataValue::None
+}

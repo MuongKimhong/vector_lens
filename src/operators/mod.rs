@@ -70,6 +70,7 @@ pub enum PropertyValue {
 pub enum OperatorKind {
     ReadCSV,
     ReadExcel,
+    AppendCSV,
     SaveCSVOrExcel,
     ReplaceMissingValue
 }

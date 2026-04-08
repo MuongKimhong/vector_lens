@@ -63,6 +63,7 @@ impl OperatorList {
     fn create_default_operators() -> Vec<Operator> {
         vec![
             read_csv_operator(),
+            append_csv_operator(),
             save_csv_or_excel_operator(),
             replace_missing_value_operator()
         ]

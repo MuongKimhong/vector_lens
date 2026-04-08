@@ -60,6 +60,37 @@ pub fn read_csv_property_container() -> impl Bundle {
     )
 }
 
+fn on_append_csv_file_picker_result(
+    change: On<Change<String>>,
+    panel_state: Res<PropertyPanelShowState>,
+    mut operator_q: Query<&mut Operator>
+) {
+    if let Some(op_entity) = panel_state.op_entity {
+        if let Ok(mut op) = operator_q.get_mut(op_entity) {
+            op.properties.insert(
+                "another_csv_file_path".to_string(),
+                PropertyValue::String(change.data.clone())
+            );
+        }
+    }
+}
+
+pub fn append_csv_property_container() -> impl Bundle {
+    column_!(
+        id: "append-csv-property-container",
+        class: "property-container",
+        display: Display::None,
+
+        [
+            text_!("Another CSV file path"),
+            file_picker_!(on: on_append_csv_file_picker_result),
+
+            text_!("*Description", margin_top: px(20)),
+            text_!("Append content of provided CSV file to existing content and turn into DataFrame.", font_size: 11.5),
+        ]
+    )
+}
+
 fn on_read_excel_file_picker_result(
     change: On<Change<String>>,
     panel_state: Res<PropertyPanelShowState>,
