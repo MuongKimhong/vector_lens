@@ -188,7 +188,7 @@ pub fn replace_missing_value_property_container() -> impl Bundle {
                 []
             ),
 
-            column_!(id: "missing-value-strategies-wrapper", margin_top: px(10), display: Display::None, [
+            column_!(id: "missing-value-strategies-wrapper", margin_top: px(20), display: Display::None, [
                 text_!("*Null: Leave it as empty or as it is.", class: "strategy-text"),
                 text_!("*Mean: Replaces with the column's average (numeric only)", class: "strategy-text"),
                 text_!("*Max: Replaces with the highest value in the column (numeric only)", class: "strategy-text"),

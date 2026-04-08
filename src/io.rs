@@ -366,6 +366,7 @@ pub fn handle_update_rmv_property_on_get_pre_read_content(
                                     "Backward Fill",
                                     "Unknown"
                                 ],
+                                margin_top: px(5),
                                 class: &format!("missing-value-replace-with-{column}"),
                                 on: on_missing_value_replace_with_selector_change
                             )
