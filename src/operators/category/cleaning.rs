@@ -165,3 +165,181 @@ pub fn handle_update_rmv_property_after_op_spawned(
         }
     }
 }
+
+pub fn select_attributes_operator() -> Operator {
+    Operator::new(
+        "Select Attributes",
+        OperatorKind::SelectAttributes,
+        DataValue::Table(DataFrame::empty()),
+        DataValue::Table(DataFrame::empty()),
+        OperatorCategory::Cleaning,
+        HashMap::from([
+            ("selected_attributes".to_string(), PropertyValue::List(Vec::new())),
+        ])
+    )
+}
+
+fn on_column_checkbox_active(
+    active: On<Active<String>>,
+    mut operator_q: Query<&mut Operator>,
+) {
+    for mut op in operator_q.iter_mut() {
+        if op.kind != OperatorKind::SelectAttributes {
+            continue;
+        }
+
+        let Some(selected_attributes_property) = op.properties.get_mut("selected_attributes") else {
+            continue;
+        };
+        match selected_attributes_property {
+            PropertyValue::List(attributes) => {
+                let exists = attributes.iter().any(|val| {
+                    if let PropertyValue::String(s) = val {
+                        s == &active.data
+                    } else {
+                        false
+                    }
+                });
+
+                if !exists {
+                    attributes.push(PropertyValue::String(active.data.clone()));
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+fn on_column_checkbox_inactive(
+    inactive: On<Inactive<String>>,
+    mut operator_q: Query<&mut Operator>,
+) {
+    for mut op in operator_q.iter_mut() {
+        if op.kind != OperatorKind::SelectAttributes {
+            continue;
+        }
+
+        let Some(selected_attributes_property) = op.properties.get_mut("selected_attributes") else {
+            continue;
+        };
+        match selected_attributes_property {
+            PropertyValue::List(attributes) => {
+                attributes.retain(|val| {
+                    if let PropertyValue::String(s) = val {
+                        s != &inactive.data
+                    } else {
+                        true
+                    }
+                });
+            }
+            _ => {}
+        }
+    }
+}
+
+// sa = select attributes
+pub fn handle_update_sa_property_after_op_spawned(
+    mut messages: MessageReader<UpdateSelectAttributesPropertyAfterOPSpawned>,
+    mut operator_q: Query<&mut Operator>,
+    mut column_q: ColumnQuery,
+    mut commands: Commands,
+    pre_read_content: Res<PreReadCsvOrExcelContent>,
+) {
+    for _msg in messages.read() {
+        if *pre_read_content.get() == DataValue::None {
+            continue;
+        }
+
+        match pre_read_content.get() {
+            DataValue::Table(df) => {
+                let columns: Vec<String> = df.get_column_names()
+                    .iter()
+                    .map(|ps| ps.to_string())
+                    .collect();
+
+                for mut op in operator_q.iter_mut() {
+                    let Some(selected_attributes_property) = op.properties.get_mut("selected_attributes") else {
+                        continue;
+                    };
+                    let mut all_attributes = Vec::new();
+
+                    let Some(attributes_wrapper) = column_q.find_by_id("all-attributes-wrapper") else {
+                        return;
+                    };
+
+                    commands.entity(attributes_wrapper.entity).despawn_children();
+                    commands.entity(attributes_wrapper.entity).with_children(|parent| {
+                        for column in columns.iter() {
+                            all_attributes.push(PropertyValue::String(column.to_string()));
+
+                            // parent.spawn(checkbox_!(
+                            //     &column,
+                            //     margin_top: px(5),
+                            //     on: on_column_checkbox_active,
+                            //     on: on_column_checkbox_inactive,
+                            // ));
+
+                            parent.spawn((
+                                checkbox(&column).margin_top(px(5)).active().build(),
+                                observe(on_column_checkbox_active),
+                                observe(on_column_checkbox_inactive),
+                            ));
+                        }
+                    });
+                    *selected_attributes_property = PropertyValue::List(all_attributes);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+pub fn handle_select_attributes_operator_execution(
+    task_sender: &Sender<TaskChannelEvent>,
+    input: &DataValue,
+    properties: &HashMap<String, PropertyValue>
+) -> DataValue {
+    let _ = task_sender.send(TaskChannelEvent::LogMessage(
+        log_normal("[Select Attributes] Started select attributes")
+    ));
+
+    let df = match input {
+        DataValue::Table(df) => df,
+        _ => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error("[Select Attributes] Input is not a Table")
+            ));
+            return DataValue::Error;
+        }
+    };
+
+    let selected_attributes = match properties.get("selected_attributes") {
+        Some(PropertyValue::List(attr)) => attr,
+        _ => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error("[Select Attributes] Configuration property missing")
+            ));
+            return DataValue::Error;
+        }
+    };
+
+    let attr_names: Vec<&str> = selected_attributes
+        .iter()
+        .filter_map(|val| match val {
+            PropertyValue::String(s) => Some(s.as_str()),
+            _ => None,
+        })
+        .collect();
+
+    let df = match df.select(&attr_names) {
+        Ok(new_df) => new_df,
+        Err(e) => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error(&format!("[Select Attributes] Failed to select columns: {}", e))
+            ));
+            return DataValue::Error;
+        }
+    };
+
+    DataValue::Table(df)
+}

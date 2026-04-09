@@ -387,9 +387,8 @@ pub fn handle_update_rmv_property_on_get_pre_read_content(
 pub fn pre_read_csv_content(
     mut thread_receiver: ResMut<PreReadCsvOrExcelContentThreadReceiver>,
     mut pre_read_content: ResMut<PreReadCsvOrExcelContent>,
-    mut operator_q: Query<&mut Operator>,
-    mut column_q: ColumnQuery,
-    mut commands: Commands
+    mut update_rmv_property_msg_writer: MessageWriter<UpdateReplaceMissingValuePropertyAfterOPSpawned>,
+    mut update_sa_property_msg_writer: MessageWriter<UpdateSelectAttributesPropertyAfterOPSpawned>
 ) {
     let Some(receiver) = &thread_receiver.get() else {
         return;
@@ -401,18 +400,11 @@ pub fn pre_read_csv_content(
         }
 
         match &result {
-            DataValue::Table(df) => {
-                if let Ok(columns) = get_dirty_column_names(&df) {
-                    handle_update_rmv_property_on_get_pre_read_content(
-                        &columns,
-                        &mut operator_q,
-                        &mut column_q,
-                        &mut commands
-                    );
-                }
-
+            DataValue::Table(_df) => {
                 pre_read_content.0 = result;
                 thread_receiver.0 = None;
+                update_rmv_property_msg_writer.write(UpdateReplaceMissingValuePropertyAfterOPSpawned);
+                update_sa_property_msg_writer.write(UpdateSelectAttributesPropertyAfterOPSpawned);
             }
             _ => {}
         }

@@ -5,6 +5,7 @@ use crate::resources::*;
 use crate::operators::*;
 use crate::canvas::*;
 use crate::messages::UpdateReplaceMissingValuePropertyAfterOPSpawned;
+use crate::UpdateSelectAttributesPropertyAfterOPSpawned;
 
 #[derive(Resource, Debug)]
 pub struct OperatorPanelShowState(pub bool);
@@ -79,14 +80,29 @@ pub fn operator_panel(operator_list: &OperatorList) -> impl Bundle {
                                         mut meshes: ResMut<Assets<Mesh>>,
                                         mut materials: ResMut<Assets<ColorMaterial>>,
                                         mut operator_in_use: ResMut<OperatorInUseList>,
-                                        mut messages: MessageWriter<UpdateReplaceMissingValuePropertyAfterOPSpawned>
+                                        mut urmvp_msg: MessageWriter<UpdateReplaceMissingValuePropertyAfterOPSpawned>,
+                                        mut usap_msg : MessageWriter<UpdateSelectAttributesPropertyAfterOPSpawned>
                                     | {
                                         let mut new_op = Operator::new_from(&op);
-                                        let entity = spawn_operator_entity(&mut commands, &mut meshes, &mut materials, &new_op, None);
+                                        let entity = spawn_operator_entity(
+                                            &mut commands,
+                                            &mut meshes,
+                                            &mut materials,
+                                            &new_op,
+                                            None
+                                        );
                                         new_op.entity = Some(entity);
 
+                                        match new_op.kind {
+                                            OperatorKind::ReplaceMissingValue => {
+                                                urmvp_msg.write(UpdateReplaceMissingValuePropertyAfterOPSpawned);
+                                            }
+                                            OperatorKind::SelectAttributes => {
+                                                usap_msg.write(UpdateSelectAttributesPropertyAfterOPSpawned);
+                                            }
+                                            _ => {}
+                                        }
                                         operator_in_use.0.push(new_op);
-                                        messages.write(UpdateReplaceMissingValuePropertyAfterOPSpawned);
                                     }
                                 ),
                             ]

@@ -39,3 +39,6 @@ pub struct SaveProcess;
 
 #[derive(Message)]
 pub struct UpdateReplaceMissingValuePropertyAfterOPSpawned;
+
+#[derive(Message)]
+pub struct UpdateSelectAttributesPropertyAfterOPSpawned;

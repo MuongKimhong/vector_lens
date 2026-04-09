@@ -22,6 +22,7 @@ impl Plugin for OperatorPlugin {
         app.add_message::<ToggleOpContext>();
         app.add_message::<ConstructConnectedCurvesAfterOpenProcess>();
         app.add_message::<UpdateReplaceMissingValuePropertyAfterOPSpawned>();
+        app.add_message::<UpdateSelectAttributesPropertyAfterOPSpawned>();
 
         app.add_systems(
             Update,
@@ -29,7 +30,8 @@ impl Plugin for OperatorPlugin {
                 handle_op_background_execution_system,
                 handle_insert_task_channel_resource_system,
                 listen_to_task_channel_receiver_system,
-                handle_update_rmv_property_after_op_spawned
+                handle_update_rmv_property_after_op_spawned,
+                handle_update_sa_property_after_op_spawned
             )
         );
     }
@@ -71,6 +73,7 @@ pub enum OperatorKind {
     ReadCSV,
     ReadExcel,
     AppendCSV,
+    SelectAttributes,
     SaveCSVOrExcel,
     ReplaceMissingValue
 }
@@ -174,6 +177,11 @@ impl Operator {
                     &properties
                 ),
                 OperatorKind::ReplaceMissingValue => handle_replace_missing_value_operator_execution(
+                    &sender,
+                    &input,
+                    &properties
+                ),
+                OperatorKind::SelectAttributes => handle_select_attributes_operator_execution(
                     &sender,
                     &input,
                     &properties

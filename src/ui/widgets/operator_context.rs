@@ -82,6 +82,7 @@ fn on_property_btn_clicked(
                 "Read CSV" => PropertyType::ReadCsv,
                 "Read Excel" => PropertyType::ReadExcel,
                 "Append CSV" => PropertyType::AppendCsv,
+                "Select Attributes" => PropertyType::SelectAttributes,
                 "Save to CSV or Excel" => PropertyType::SaveCsvOrExcel,
                 "Replace missing value" => PropertyType::ReplaceMissingValue,
                 _ => PropertyType::None

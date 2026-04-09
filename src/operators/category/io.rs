@@ -106,6 +106,7 @@ fn handle_write_to_csv_helper(
     match input {
         DataValue::Table(df) => {
             let mut df_clone = df.clone();
+            println!("dataframe in save {:?}", df);
 
             match CsvWriter::new(file).include_header(true).with_separator(b',').finish(&mut df_clone) {
                 Ok(_) => {
@@ -253,7 +254,18 @@ pub fn handle_append_csv_operator_execution(
     input: &DataValue,
     properties: &HashMap<String, PropertyValue>
 ) -> DataValue {
-    // Implementation goes here
+    // Implementation goes here.
+    //
+    // Append the content of "another_csv_file_path" property to the dataframe of input.
+    //
+    // Example:
+    // File 1 (input)          File 2                  -> Result
+    //
+    // |Names    |Ages |       |Names    |Ages  |         |Names    |Ages  |
+    // |John     |28   |       |Alex     |38    |         |John     |28    |
+    // |Richard  |32   |       |Henesy   |24    |         |Richard  |32    |
+    //                                                    |Alex     |38    |
+    //                                                    |Henesy   |24    |
     //
     // - PropertyValue definition:
     // pub enum PropertyValue {

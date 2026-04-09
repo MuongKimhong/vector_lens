@@ -91,6 +91,22 @@ pub fn append_csv_property_container() -> impl Bundle {
     )
 }
 
+pub fn select_attributes_property_container() -> impl Bundle {
+    column_!(
+        id: "select-attributes-property-container",
+        class: "property-container",
+        display: Display::None,
+
+        [
+            text_!("All attributes: "),
+            column_!(id: "all-attributes-wrapper", []),
+
+            text_!("*Description", margin_top: px(20)),
+            text_!("Keep selected attributes (columns) and drop all the remaining.", font_size: 11.5),
+        ]
+    )
+}
+
 fn on_read_excel_file_picker_result(
     change: On<Change<String>>,
     panel_state: Res<PropertyPanelShowState>,
