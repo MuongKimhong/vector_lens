@@ -81,7 +81,8 @@ pub fn operator_panel(operator_list: &OperatorList) -> impl Bundle {
                                         mut materials: ResMut<Assets<ColorMaterial>>,
                                         mut operator_in_use: ResMut<OperatorInUseList>,
                                         mut urmvp_msg: MessageWriter<UpdateReplaceMissingValuePropertyAfterOPSpawned>,
-                                        mut usap_msg : MessageWriter<UpdateSelectAttributesPropertyAfterOPSpawned>
+                                        mut usap_msg : MessageWriter<UpdateSelectAttributesPropertyAfterOPSpawned>,
+                                        design_page_root_entity: Res<DesignPageRootEntity>
                                     | {
                                         let mut new_op = Operator::new_from(&op);
                                         let entity = spawn_operator_entity(
@@ -103,6 +104,10 @@ pub fn operator_panel(operator_list: &OperatorList) -> impl Bundle {
                                             _ => {}
                                         }
                                         operator_in_use.0.push(new_op);
+
+                                        if let Some(design_page_entity) = design_page_root_entity.get() {
+                                            commands.entity(*design_page_entity).add_child(entity);
+                                        }
                                     }
                                 ),
                             ]

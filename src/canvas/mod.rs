@@ -40,7 +40,8 @@ pub fn spawn_operator_entity(
             ..default()
         },
         TextColor::default(),
-        Transform::from_xyz(0.0, 35.0, 0.0)
+        Transform::from_xyz(0.0, 35.0, 0.0),
+        Visibility::Inherited
     ))
     .id();
 
@@ -51,6 +52,7 @@ pub fn spawn_operator_entity(
             // Transform::from_xyz(100.0, 100.0, 0.0),
             OpBox::new(op.id, &op.name),
             OperatorNameEntity(op_name_entity),
+            Visibility::Inherited,
             op.clone()
         ))
         .observe(on_op_drag)
@@ -81,6 +83,7 @@ pub fn spawn_operator_entity(
                 },
                 OpConnectButton::new_as_input(),
                 OperatorEntity(op_entity),
+                Visibility::Inherited,
                 observe(on_input_button_clicked),
                 observe(on_input_button_mouse_over),
                 observe(on_input_button_mouse_out),
@@ -99,6 +102,7 @@ pub fn spawn_operator_entity(
         },
         OpConnectButton::new_as_output(),
         OperatorEntity(op_entity),
+        Visibility::Inherited,
         observe(on_output_button_clicked),
         observe(on_output_button_mouse_over),
         observe(on_output_button_mouse_out),
@@ -373,8 +377,13 @@ pub fn draw_temp_gizmo_connection_curve_system(temp_curve: Res<TempCurveData>, m
 pub fn draw_connected_gizmo_curve_system(
     connected_curves: Res<ConnectedCurves>,
     transforms: Query<&GlobalTransform>,
-    mut gizmos: Gizmos,
+    ui_state: Res<UiState>,
+    mut gizmos: Gizmos
 ) {
+    if ui_state.viewing_tab == ViewingTab::Result {
+        return;
+    }
+
     for conn in &connected_curves.0 {
         let Ok(out_tf) = transforms.get(conn.out_entity) else { continue };
         let Ok(in_tf) = transforms.get(conn.in_entity) else { continue };
@@ -401,9 +410,14 @@ pub fn detect_mouse_over_connected_curves(
     window_entity: Single<Entity, With<Window>>,
     camera_q: Query<(&Camera, &GlobalTransform)>,
     asset_server: Res<AssetServer>,
+    ui_state: Res<UiState>,
     mut hovered_curve: ResMut<HoveredCurve>,
     mut commands: Commands
 ) {
+    if ui_state.viewing_tab == ViewingTab::Result {
+        return;
+    }
+
     let Some(mouse_pos) = get_world_position_from_cursor(&window, &camera_q) else {
         return;
     };

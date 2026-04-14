@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use super::*;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq)]
 pub enum ViewingTab {
     #[default]
     Design,
@@ -38,13 +38,36 @@ impl UiState {
         }
     }
 
-    pub fn on_viewing_tab_change_system(state: Res<UiState>, mut btn_q: ButtonQuery) {
+    pub fn on_viewing_tab_change_system(
+        state: Res<UiState>,
+        mut btn_q: ButtonQuery,
+        mut commands: Commands,
+        design_page_root_entity: Res<DesignPageRootEntity>,
+        result_page_root_entity: Res<ResultPageRootEntity>
+    ) {
         if !state.is_changed() { return; }
 
         let (design_class, result_class) = match state.viewing_tab {
             ViewingTab::Design => ("is-primary-dark", "is-light"),
-            ViewingTab::Result => ("is-light", "is-primary-dark"),
+            ViewingTab::Result => ("is-light", "is-primary-dark")
         };
+
+        let (design_vis, result_vis, design_trans_z, result_trans_z) = match state.viewing_tab {
+            ViewingTab::Design => (Visibility::Visible, Visibility::Hidden, 1.0 as f32, 0.0 as f32),
+            ViewingTab::Result => (Visibility::Hidden, Visibility::Visible, 0.0 as f32, 1.0 as f32)
+        };
+
+        if let Some(design_page_entity) = design_page_root_entity.get() {
+            commands
+                .entity(*design_page_entity)
+                .insert((design_vis, Transform::from_translation(Vec3::new(0.0, 0.0, design_trans_z))));
+        }
+
+        if let Some(result_page_entity) = result_page_root_entity.get() {
+            commands
+                .entity(*result_page_entity)
+                .insert((result_vis, Transform::from_translation(Vec3::new(0.0, 0.0, result_trans_z))));
+        }
 
         if let Some(btn) = btn_q.find_by_id("design-tab-btn") {
             btn.class.set_class(design_class);
@@ -246,3 +269,9 @@ pub struct PreReadCsvOrExcelContentThreadReceiver(pub Option<Receiver<DataValue>
 
 #[derive(Resource, Debug, Default, Getter)]
 pub struct PreReadCsvOrExcelContent(pub DataValue);
+
+#[derive(Resource, Debug, Default, Getter)]
+pub struct DesignPageRootEntity(pub Option<Entity>);
+
+#[derive(Resource, Debug, Default, Getter)]
+pub struct ResultPageRootEntity(pub Option<Entity>);
