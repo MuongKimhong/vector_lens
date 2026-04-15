@@ -12,7 +12,8 @@ pub enum PropertyType {
     AppendCsv,
     SelectAttributes,
     SaveCsvOrExcel,
-    ReplaceMissingValue
+    ReplaceMissingValue,
+    NormalizerAndEncoder
 }
 
 #[derive(Resource, Debug)]
@@ -95,6 +96,7 @@ pub fn handle_update_property_panel_content(
         PropertyType::SelectAttributes => "select-attributes-property-container",
         PropertyType::SaveCsvOrExcel => "save-to-csv-or-excel-property-container",
         PropertyType::ReplaceMissingValue => "replace-missing-value-property-container",
+        PropertyType::NormalizerAndEncoder => "normalizer-and-encoder-property-container",
         _ => return
     };
 
@@ -136,7 +138,8 @@ pub fn property_panel() -> impl Bundle {
                 read_excel_property_container(),
                 select_attributes_property_container(),
                 save_to_csv_or_excel_property_container(),
-                replace_missing_value_property_container()
+                replace_missing_value_property_container(),
+                normalizer_and_encoder_property_container()
             ])
         ]
     )

@@ -75,7 +75,8 @@ pub enum OperatorKind {
     AppendCSV,
     SelectAttributes,
     SaveCSVOrExcel,
-    ReplaceMissingValue
+    ReplaceMissingValue,
+    NormalizerAndEncoder
 }
 
 #[derive(Component, Debug, Clone)]
@@ -161,6 +162,7 @@ impl Operator {
         let properties = self.properties.clone();
         let sender = task_sender.clone();
 
+        println!("op kind {:?}", kind);
         thread_pool.spawn(async move {
             match kind {
                 OperatorKind::ReadCSV => handle_read_csv_operator_execution(
@@ -176,17 +178,26 @@ impl Operator {
                     &input,
                     &properties
                 ),
-                OperatorKind::ReplaceMissingValue => handle_replace_missing_value_operator_execution(
-                    &sender,
-                    &input,
-                    &properties
-                ),
                 OperatorKind::SelectAttributes => handle_select_attributes_operator_execution(
                     &sender,
                     &input,
                     &properties
                 ),
-                _ => DataValue::None
+                OperatorKind::ReplaceMissingValue => handle_replace_missing_value_operator_execution(
+                    &sender,
+                    &input,
+                    &properties
+                ),
+                OperatorKind::NormalizerAndEncoder => handle_normalizer_and_encoder_operator_execution(
+                    &sender,
+                    &input,
+                    &properties
+                ),
+                OperatorKind::AppendCSV => handle_append_csv_operator_execution(
+                    &sender,
+                    &input,
+                    &properties
+                )
             }
         })
     }

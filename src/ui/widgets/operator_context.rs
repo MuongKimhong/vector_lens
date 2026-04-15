@@ -85,6 +85,7 @@ fn on_property_btn_clicked(
                 "Select Attributes" => PropertyType::SelectAttributes,
                 "Save to CSV or Excel" => PropertyType::SaveCsvOrExcel,
                 "Replace missing value" => PropertyType::ReplaceMissingValue,
+                "Normalizer & Encoder" => PropertyType::NormalizerAndEncoder,
                 _ => PropertyType::None
             };
         }

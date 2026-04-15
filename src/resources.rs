@@ -89,7 +89,8 @@ impl OperatorList {
             append_csv_operator(),
             select_attributes_operator(),
             save_csv_or_excel_operator(),
-            replace_missing_value_operator()
+            replace_missing_value_operator(),
+            normalizer_and_encoder_operator()
         ]
     }
 

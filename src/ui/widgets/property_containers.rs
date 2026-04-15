@@ -253,3 +253,32 @@ pub fn replace_missing_value_property_container() -> impl Bundle {
         ]
     )
 }
+
+pub fn normalizer_and_encoder_property_container() -> impl Bundle {
+    column_!(
+        id: "normalizer-and-encoder-property-container",
+        class: "property-container",
+        display: Display::None,
+
+        [
+            checkbox_!("Apply Normalization", id: "apply-normalization-checkbox", margin_top: px(10)),
+            // select_!(
+            //     "Normalization Method",
+            //     choices: &["z-score", "min-max"],
+            //     margin_top: px(10),
+            //     id: "normalization-method-selector"
+            // ),
+
+            // checkbox_!("Apply One-Hot Encoding", id: "apply-one-hot-encoding-checkbox", margin_top: px(10)),
+
+            // text_!("Selected Columns", margin_top: px(20)),
+            // column_!(id: "selected-columns-wrapper", []),
+
+            // text_!("*Description", margin_top: px(20)),
+            // text_!(
+            //     "Apply Z-Score normalization or Min-Max scaling to numeric columns and One-Hot Encoding to categorical columns.",
+            //     font_size: 11.5
+            // ),
+        ]
+    )
+}
