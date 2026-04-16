@@ -23,6 +23,7 @@ impl Plugin for OperatorPlugin {
         app.add_message::<ConstructConnectedCurvesAfterOpenProcess>();
         app.add_message::<UpdateReplaceMissingValuePropertyAfterOPSpawned>();
         app.add_message::<UpdateSelectAttributesPropertyAfterOPSpawned>();
+        app.add_message::<UpdateNormalizerAndEncoderPropertyAfterOPSpawned>();
 
         app.add_systems(
             Update,

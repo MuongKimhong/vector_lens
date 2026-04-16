@@ -4,8 +4,7 @@ use makara::prelude::*;
 use crate::resources::*;
 use crate::operators::*;
 use crate::canvas::*;
-use crate::messages::UpdateReplaceMissingValuePropertyAfterOPSpawned;
-use crate::UpdateSelectAttributesPropertyAfterOPSpawned;
+use crate::messages::*;
 
 #[derive(Resource, Debug)]
 pub struct OperatorPanelShowState(pub bool);
@@ -82,6 +81,7 @@ pub fn operator_panel(operator_list: &OperatorList) -> impl Bundle {
                                         mut operator_in_use: ResMut<OperatorInUseList>,
                                         mut urmvp_msg: MessageWriter<UpdateReplaceMissingValuePropertyAfterOPSpawned>,
                                         mut usap_msg : MessageWriter<UpdateSelectAttributesPropertyAfterOPSpawned>,
+                                        mut unaep_msg: MessageWriter<UpdateNormalizerAndEncoderPropertyAfterOPSpawned>,
                                         design_page_root_entity: Res<DesignPageRootEntity>
                                     | {
                                         let mut new_op = Operator::new_from(&op);
@@ -100,6 +100,9 @@ pub fn operator_panel(operator_list: &OperatorList) -> impl Bundle {
                                             }
                                             OperatorKind::SelectAttributes => {
                                                 usap_msg.write(UpdateSelectAttributesPropertyAfterOPSpawned);
+                                            }
+                                            OperatorKind::NormalizerAndEncoder => {
+                                                unaep_msg.write(UpdateNormalizerAndEncoderPropertyAfterOPSpawned);
                                             }
                                             _ => {}
                                         }

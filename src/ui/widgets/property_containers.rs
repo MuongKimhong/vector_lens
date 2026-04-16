@@ -254,6 +254,51 @@ pub fn replace_missing_value_property_container() -> impl Bundle {
     )
 }
 
+fn on_normalization_method_selector_change(
+    change: On<Change<String>>,
+    panel_state: Res<PropertyPanelShowState>,
+    mut operator_q: Query<&mut Operator>
+) {
+    if let Some(op_entity) = panel_state.op_entity {
+        if let Ok(mut op) = operator_q.get_mut(op_entity) {
+            let Some(apply_norm_property) = op.properties.get_mut("apply_normalization") else {
+                return;
+            };
+
+            if change.data.is_empty() || change.data == "No normalization" {
+                *apply_norm_property = PropertyValue::Bool(false);
+                return;
+            }
+            *apply_norm_property = PropertyValue::Bool(true);
+
+            let Some(normalize_method_property) = op.properties.get_mut("normalization_method") else {
+                return;
+            };
+            *normalize_method_property = PropertyValue::String(change.data.clone());
+        }
+    }
+}
+
+fn on_encoding_method_selector_change(
+    change: On<Change<String>>,
+    panel_state: Res<PropertyPanelShowState>,
+    mut operator_q: Query<&mut Operator>
+) {
+    if let Some(op_entity) = panel_state.op_entity {
+        if let Ok(mut op) = operator_q.get_mut(op_entity) {
+            let Some(apply_encoding_property) = op.properties.get_mut("apply_one_hot_encoding") else {
+                return;
+            };
+
+            if change.data.is_empty() || change.data == "No encoding" {
+                *apply_encoding_property = PropertyValue::Bool(false);
+                return;
+            }
+            *apply_encoding_property = PropertyValue::Bool(true);
+        }
+    }
+}
+
 pub fn normalizer_and_encoder_property_container() -> impl Bundle {
     column_!(
         id: "normalizer-and-encoder-property-container",
@@ -261,24 +306,27 @@ pub fn normalizer_and_encoder_property_container() -> impl Bundle {
         display: Display::None,
 
         [
-            checkbox_!("Apply Normalization", id: "apply-normalization-checkbox", margin_top: px(10)),
-            // select_!(
-            //     "Normalization Method",
-            //     choices: &["z-score", "min-max"],
-            //     margin_top: px(10),
-            //     id: "normalization-method-selector"
-            // ),
+            select_!(
+                "Normalization Method",
+                choices: &["No normalization", "z-score", "min-max"],
+                margin_top: px(10),
+                width: percent(100),
+                on: on_normalization_method_selector_change
+            ),
 
-            // checkbox_!("Apply One-Hot Encoding", id: "apply-one-hot-encoding-checkbox", margin_top: px(10)),
+            select_!(
+                "Encoding Method",
+                choices: &["No encoding", "one-hot encoding"],
+                margin_top: px(10),
+                width: percent(100),
+                on: on_encoding_method_selector_change
+            ),
 
-            // text_!("Selected Columns", margin_top: px(20)),
-            // column_!(id: "selected-columns-wrapper", []),
-
-            // text_!("*Description", margin_top: px(20)),
-            // text_!(
-            //     "Apply Z-Score normalization or Min-Max scaling to numeric columns and One-Hot Encoding to categorical columns.",
-            //     font_size: 11.5
-            // ),
+            text_!("*Description", margin_top: px(20)),
+            text_!(
+                "Apply Z-Score normalization or Min-Max scaling to numeric columns and One-Hot Encoding to categorical columns.",
+                font_size: 11.5
+            ),
         ]
     )
 }

@@ -42,3 +42,6 @@ pub struct UpdateReplaceMissingValuePropertyAfterOPSpawned;
 
 #[derive(Message)]
 pub struct UpdateSelectAttributesPropertyAfterOPSpawned;
+
+#[derive(Message)]
+pub struct UpdateNormalizerAndEncoderPropertyAfterOPSpawned;
