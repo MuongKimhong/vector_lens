@@ -157,3 +157,27 @@ pub fn handle_normalizer_and_encoder_operator_execution(
 //         }
 //     }
 // }
+
+pub fn train_test_split_operator() -> Operator {
+    Operator::new(
+        "Train & Test split",
+        OperatorKind::TrainTestSplit,
+        DataValue::Table(DataFrame::empty()),
+        DataValue::Table(DataFrame::empty()),
+        OperatorCategory::MachineLearning,
+        HashMap::from([
+            ("train_set_percent".to_string(), PropertyValue::Float(80.0)),
+            ("test_set_percent".to_string(), PropertyValue::Float(20.0)),
+            ("shuffle".to_string(), PropertyValue::Bool(true)),
+        ])
+    )
+}
+
+
+pub fn handle_train_test_split_operator_execution(
+    task_sender: &Sender<TaskChannelEvent>,
+    input: &DataValue,
+    properties: &HashMap<String, PropertyValue>
+) -> DataValue {
+    DataValue::None
+}

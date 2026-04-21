@@ -90,7 +90,8 @@ impl OperatorList {
             select_attributes_operator(),
             save_csv_or_excel_operator(),
             replace_missing_value_operator(),
-            normalizer_and_encoder_operator()
+            normalizer_and_encoder_operator(),
+            train_test_split_operator()
         ]
     }
 
@@ -276,3 +277,8 @@ pub struct DesignPageRootEntity(pub Option<Entity>);
 
 #[derive(Resource, Debug, Default, Getter)]
 pub struct ResultPageRootEntity(pub Option<Entity>);
+
+/// This resource is used to store dataframe for test set
+/// from train_test_split_operator
+#[derive(Resource, Debug, Default, Getter)]
+pub struct TestSet(pub Option<DataValue>);

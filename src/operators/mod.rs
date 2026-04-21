@@ -24,6 +24,7 @@ impl Plugin for OperatorPlugin {
         app.add_message::<UpdateReplaceMissingValuePropertyAfterOPSpawned>();
         app.add_message::<UpdateSelectAttributesPropertyAfterOPSpawned>();
         app.add_message::<UpdateNormalizerAndEncoderPropertyAfterOPSpawned>();
+        app.insert_resource(TestSet::default());
 
         app.add_systems(
             Update,
@@ -77,7 +78,8 @@ pub enum OperatorKind {
     SelectAttributes,
     SaveCSVOrExcel,
     ReplaceMissingValue,
-    NormalizerAndEncoder
+    NormalizerAndEncoder,
+    TrainTestSplit
 }
 
 #[derive(Component, Debug, Clone)]
@@ -163,7 +165,6 @@ impl Operator {
         let properties = self.properties.clone();
         let sender = task_sender.clone();
 
-        println!("op kind {:?}", kind);
         thread_pool.spawn(async move {
             match kind {
                 OperatorKind::ReadCSV => handle_read_csv_operator_execution(
@@ -195,6 +196,11 @@ impl Operator {
                     &properties
                 ),
                 OperatorKind::AppendCSV => handle_append_csv_operator_execution(
+                    &sender,
+                    &input,
+                    &properties
+                ),
+                OperatorKind::TrainTestSplit => handle_train_test_split_operator_execution(
                     &sender,
                     &input,
                     &properties

@@ -13,7 +13,8 @@ pub enum PropertyType {
     SelectAttributes,
     SaveCsvOrExcel,
     ReplaceMissingValue,
-    NormalizerAndEncoder
+    NormalizerAndEncoder,
+    TrainTestSplit
 }
 
 #[derive(Resource, Debug)]
@@ -97,6 +98,7 @@ pub fn handle_update_property_panel_content(
         PropertyType::SaveCsvOrExcel => "save-to-csv-or-excel-property-container",
         PropertyType::ReplaceMissingValue => "replace-missing-value-property-container",
         PropertyType::NormalizerAndEncoder => "normalizer-and-encoder-property-container",
+        PropertyType::TrainTestSplit => "train-test-split-property-container",
         _ => return
     };
 
@@ -132,15 +134,30 @@ pub fn property_panel() -> impl Bundle {
 
             text_!("", id: "property-op-name", font_size: 14.0, justify_content: JustifyContent::Center),
 
-            scroll_!(height: percent(100), padding_x: px(5), [
-                read_csv_property_container(),
-                append_csv_property_container(),
-                read_excel_property_container(),
-                select_attributes_property_container(),
-                save_to_csv_or_excel_property_container(),
-                replace_missing_value_property_container(),
-                normalizer_and_encoder_property_container()
-            ])
+            read_csv_property_container(),
+            append_csv_property_container(),
+            read_excel_property_container(),
+            select_attributes_property_container(),
+            save_to_csv_or_excel_property_container(),
+            replace_missing_value_property_container(),
+            replace_missing_value_property_container(),
+            replace_missing_value_property_container(),
+            replace_missing_value_property_container(),
+            replace_missing_value_property_container(),
+            replace_missing_value_property_container(),
+            // normalizer_and_encoder_property_container(),
+            train_test_split_property_container(),
+
+            // column_!(height: percent(100), padding_x: px(5), [
+            //     read_csv_property_container(),
+            //     append_csv_property_container(),
+            //     read_excel_property_container(),
+            //     select_attributes_property_container(),
+            //     save_to_csv_or_excel_property_container(),
+            //     replace_missing_value_property_container(),
+            //     normalizer_and_encoder_property_container(),
+            //     train_test_split_property_container()
+            // ])
         ]
     )
 }

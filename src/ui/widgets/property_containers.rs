@@ -330,3 +330,25 @@ pub fn normalizer_and_encoder_property_container() -> impl Bundle {
         ]
     )
 }
+
+pub fn train_test_split_property_container() -> impl Bundle {
+    column_!(
+        id: "train-test-split-property-container",
+        class: "property-container",
+        // display: Display::None,
+
+        [
+            // text_!("Training set percentage"),
+            // text_input_!("Enter number only"),
+
+            // text_!("Testing set percentage"),
+            // text_input_!("Enter number only"),
+
+            text_!("*Description", margin_top: px(20)),
+            text_!(
+                "Split the data into training and testing set.",
+                font_size: 11.5
+            ),
+        ]
+    )
+}
