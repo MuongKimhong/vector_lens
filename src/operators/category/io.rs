@@ -106,7 +106,6 @@ fn handle_write_to_csv_helper(
     match input {
         DataValue::Table(df) => {
             let mut df_clone = df.clone();
-            println!("dataframe in save {:?}", df);
 
             match CsvWriter::new(file).include_header(true).with_separator(b',').finish(&mut df_clone) {
                 Ok(_) => {
@@ -264,30 +263,18 @@ pub fn handle_append_csv_operator_execution(
             ));
             return DataValue::Error;
         }
-    }
+    };
 
     // Extracting DataFrame from input, if input is not a DataFrame, log error and return DataValue::Error
-    let mut base_df = match input {
+    let base_df = match input {
         DataValue::Table(df) => df,
-        DataValue::FilePath(path) => {
-            let df = CsvReadOptions::default()
-                .with_has_header(true)
-                .with_infer_schema_length(None)
-                .with_low_memory(true)
-                .try_into_reader_with_file_path(Some(path.into()))
-                .and_then(|reader| reader.finish());
-
-            match df {
-                Ok(frame) => frame,
-                Err(e) => {
-                    let _ = task_sender.send(TaskChannelEvent::LogMessage(
-                        log_error(&format!("[Append CSV] {e}"))
-                    ));
-                    return DataValue::Error;
-                }
-            }
+        _ => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error("[Append CSV] input not table")
+            ));
+            return DataValue::Error;
         }
-    }
+    };
 
     // Reading the CSV file from another_csv_file_path into a DataFrame, if any error occurs, log error and return DataValue::Error
     let append_df = CsvReadOptions::default()
@@ -295,7 +282,14 @@ pub fn handle_append_csv_operator_execution(
         .with_infer_schema_length(None)
         .with_low_memory(true)
         .try_into_reader_with_file_path(Some(another_csv_file_path.into()))
-        .and_then(|reader| reader.finish());    
+        .and_then(|reader| reader.finish());
+
+    let Ok(append_df) = append_df else {
+        let _ = task_sender.send(TaskChannelEvent::LogMessage(
+            log_error("[Append CSV] Failed to read another csv file")
+        ));
+        return DataValue::Error;
+    };
 
     //Appending the two DataFrames vertically, if any error occurs, log error and return DataValue::Error
     let df = match base_df.vstack(&append_df) {
@@ -313,6 +307,4 @@ pub fn handle_append_csv_operator_execution(
         log_normal("[Append CSV] Appended CSV content")
     ));
     return DataValue::Table(df);
-
-    DataValue::None
 }
