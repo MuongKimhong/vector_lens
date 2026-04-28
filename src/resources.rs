@@ -207,6 +207,7 @@ impl ConsoleLog {
 #[derive(Debug)]
 pub enum TaskChannelEvent {
     LogMessage(LogType),
+    SetTestData(DataValue),
     None
 }
 

@@ -159,7 +159,8 @@ pub fn handle_insert_task_channel_resource_system(
 
 pub fn listen_to_task_channel_receiver_system(
     receiver: Option<Res<TaskChannelReceiver>>,
-    mut console_log: ResMut<ConsoleLog>
+    mut console_log: ResMut<ConsoleLog>,
+    mut test_set: ResMut<TestSet>
 ) {
     let Some(receiver) = receiver else {
         return;
@@ -168,6 +169,12 @@ pub fn listen_to_task_channel_receiver_system(
     while let Ok(channel_event) = receiver.0.try_recv() {
         match channel_event {
             TaskChannelEvent::LogMessage(log_type) => console_log.new_message(log_type),
+            TaskChannelEvent::SetTestData(data) => {
+                match data {
+                    DataValue::Table(_) => test_set.0 = Some(data.clone()),
+                    _ => {}
+                }
+            }
             _ => {}
         }
     }

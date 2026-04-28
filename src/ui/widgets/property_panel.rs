@@ -122,44 +122,36 @@ pub fn handle_update_property_panel_content(
     }
 }
 
-pub fn property_panel() -> impl Bundle {
-    column_!(
-        id: "property-panel";
+// use commands to spawn directly instead of return impl Bundle.
+// because macro expansion is likely to cause god damn stack overflow. no idea why.
+pub fn property_panel(commands: &mut Commands) -> Entity {
+    commands
+        .spawn(column_!(id: "property-panel"))
+        .with_children(|parent| {
+            parent.spawn(row_!(
+                justify_content: JustifyContent::SpaceBetween; [
+                    text_!("Property", font_size: 14.0),
+                    button_!("x", class: "is-light"; on: on_close_button_clicked)
+                ]
+            ));
 
-        [
-            row_!(justify_content: JustifyContent::SpaceBetween; [
-                text_!("Property", font_size: 14.0),
-                button_!("x", class: "is-light"; on: on_close_button_clicked)
-            ]),
+            parent.spawn(
+                text_!("", id: "property-op-name", font_size: 14.0, justify_content: JustifyContent::Center)
+            );
 
-            text_!("", id: "property-op-name", font_size: 14.0, justify_content: JustifyContent::Center),
-
-            read_csv_property_container(),
-            append_csv_property_container(),
-            read_excel_property_container(),
-            select_attributes_property_container(),
-            save_to_csv_or_excel_property_container(),
-            replace_missing_value_property_container(),
-            replace_missing_value_property_container(),
-            replace_missing_value_property_container(),
-            replace_missing_value_property_container(),
-            replace_missing_value_property_container(),
-            replace_missing_value_property_container(),
-            // normalizer_and_encoder_property_container(),
-            train_test_split_property_container(),
-
-            // column_!(height: percent(100), padding_x: px(5), [
-            //     read_csv_property_container(),
-            //     append_csv_property_container(),
-            //     read_excel_property_container(),
-            //     select_attributes_property_container(),
-            //     save_to_csv_or_excel_property_container(),
-            //     replace_missing_value_property_container(),
-            //     normalizer_and_encoder_property_container(),
-            //     train_test_split_property_container()
-            // ])
-        ]
-    )
+            parent
+                .spawn(column_!(height: percent(100), padding_x: px(5), justify_content: JustifyContent::Start))
+                .with_children(|column_parent| {
+                    column_parent.spawn(read_csv_property_container());
+                    column_parent.spawn(append_csv_property_container());
+                    column_parent.spawn(select_attributes_property_container());
+                    column_parent.spawn(save_to_csv_or_excel_property_container());
+                    column_parent.spawn(replace_missing_value_property_container());
+                    column_parent.spawn(normalizer_and_encoder_property_container());
+                    column_parent.spawn(train_test_split_property_container());
+                });
+        })
+        .id()
 }
 
 fn on_close_button_clicked(_: On<Clicked>, mut panel_state: ResMut<PropertyPanelShowState>) {

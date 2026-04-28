@@ -331,24 +331,81 @@ pub fn normalizer_and_encoder_property_container() -> impl Bundle {
     )
 }
 
+fn on_percentage_input_change(
+    change: On<Change<String>>,
+    panel_state: Res<PropertyPanelShowState>,
+    mut operator_q: Query<&mut Operator>
+) {
+    if let Some(op_entity) = panel_state.op_entity {
+        if let Ok(mut op) = operator_q.get_mut(op_entity) {
+            let Some(train_set_percent) = op.properties.get_mut("train_set_percent") else {
+                return;
+            };
+
+            if let Ok(percent) = change.data.parse::<f32>() {
+                *train_set_percent = PropertyValue::Float(percent);
+            }
+        }
+    }
+}
+
+fn on_shuffle_checkbox_active(
+    _: On<Active<String>>,
+    panel_state: Res<PropertyPanelShowState>,
+    mut operator_q: Query<&mut Operator>
+) {
+    if let Some(op_entity) = panel_state.op_entity {
+        if let Ok(mut op) = operator_q.get_mut(op_entity) {
+            let Some(shuffle) = op.properties.get_mut("shuffle") else {
+                return;
+            };
+
+            *shuffle = PropertyValue::Bool(true);
+        }
+    }
+}
+
+fn on_shuffle_checkbox_inactive(
+    _: On<Inactive<String>>,
+    panel_state: Res<PropertyPanelShowState>,
+    mut operator_q: Query<&mut Operator>
+) {
+    if let Some(op_entity) = panel_state.op_entity {
+        if let Ok(mut op) = operator_q.get_mut(op_entity) {
+            let Some(shuffle) = op.properties.get_mut("shuffle") else {
+                return;
+            };
+
+            *shuffle = PropertyValue::Bool(false);
+        }
+    }
+}
+
 pub fn train_test_split_property_container() -> impl Bundle {
     column_!(
         id: "train-test-split-property-container",
         class: "property-container",
-        // display: Display::None,
+        display: Display::None,
 
         [
-            // text_!("Training set percentage"),
-            // text_input_!("Enter number only"),
+            text_!("Training set percentage"),
+            text_input_!("Enter number only", width: percent(100), on: on_percentage_input_change),
 
-            // text_!("Testing set percentage"),
-            // text_input_!("Enter number only"),
+            (
+                checkbox("Shuffle data before split").active().margin_top(px(20)).build(),
+                observe(on_shuffle_checkbox_active),
+                observe(on_shuffle_checkbox_inactive),
+            ),
 
             text_!("*Description", margin_top: px(20)),
             text_!(
                 "Split the data into training and testing set.",
                 font_size: 11.5
             ),
+            text_!(
+                "If training set percentage is not provided, it will be set to 80%",
+                font_size: 11.5
+            )
         ]
     )
 }

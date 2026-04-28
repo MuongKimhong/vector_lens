@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use makara::prelude::*;
-use polars::prelude::{col, lit, DataFrameOps, CsvReadOptions, CsvWriter, DataFrame, SerReader, SerWriter, IntoLazy};
+use polars::prelude::{col, NamedFrom, Series, lit, DataFrameOps, CsvReadOptions, CsvWriter, DataFrame, SerReader, SerWriter, IntoLazy};
 use polars::datatypes::DataType;
 use std::collections::HashMap;
 use crate::utils::*;
@@ -167,17 +167,82 @@ pub fn train_test_split_operator() -> Operator {
         OperatorCategory::MachineLearning,
         HashMap::from([
             ("train_set_percent".to_string(), PropertyValue::Float(80.0)),
-            ("test_set_percent".to_string(), PropertyValue::Float(20.0)),
             ("shuffle".to_string(), PropertyValue::Bool(true)),
         ])
     )
 }
-
 
 pub fn handle_train_test_split_operator_execution(
     task_sender: &Sender<TaskChannelEvent>,
     input: &DataValue,
     properties: &HashMap<String, PropertyValue>
 ) -> DataValue {
-    DataValue::None
+    let _ = task_sender.send(TaskChannelEvent::LogMessage(
+        log_normal("[Train & Test split] Started train & test split")
+    ));
+
+    let train_set_percent = match properties.get("train_set_percent") {
+        Some(PropertyValue::Float(percent)) => percent,
+        _ => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error("[Train & Test split] train_set_percent property missing")
+            ));
+            return DataValue::Error;
+        }
+    };
+
+    let shuffle = match properties.get("shuffle") {
+        Some(PropertyValue::Bool(flag)) => flag,
+        _ => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error("[Train & Test split] shuffle property missing")
+            ));
+            return DataValue::Error;
+        }
+    };
+
+    let df = match input {
+        DataValue::Table(df) => df,
+        _ => {
+            let _ = task_sender.send(TaskChannelEvent::LogMessage(
+                log_error("[Train & Test split] Input is not a Table")
+            ));
+            return DataValue::Error;
+        }
+    };
+    let total_rows = df.height();
+
+    if total_rows == 0 {
+        return DataValue::Table(df.clone());
+    }
+
+    let new_df;
+
+    if *shuffle {
+        new_df = match df.sample_frac(
+            &Series::new("frac".into(), &[1.0f64]),
+            false,
+            true,
+            Some(42)
+        ) {
+            Ok(shuffled) => shuffled,
+            Err(_) => return DataValue::Error, // Handle potential sampling errors
+        };
+    }
+    else {
+        new_df = df.clone();
+    }
+
+    let total_rows = df.height();
+    let train_size = (total_rows as f64 * (train_set_percent / 100.0) as f64) as usize;
+    let test_size = total_rows - train_size;
+    let train_df = new_df.slice(0, train_size);
+    let test_df = new_df.slice(train_size as i64, test_size);
+
+    println!("train df {:?}", train_df);
+    println!("test df {:?}", test_df);
+
+    let _ = task_sender.send(TaskChannelEvent::SetTestData(DataValue::Table(test_df)));
+
+    DataValue::Table(train_df)
 }
