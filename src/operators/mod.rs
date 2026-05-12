@@ -79,7 +79,8 @@ pub enum OperatorKind {
     SaveCSVOrExcel,
     ReplaceMissingValue,
     NormalizerAndEncoder,
-    TrainTestSplit
+    TrainTestSplit,
+    LinearRegression
 }
 
 #[derive(Component, Debug, Clone)]
@@ -201,6 +202,11 @@ impl Operator {
                     &properties
                 ),
                 OperatorKind::TrainTestSplit => handle_train_test_split_operator_execution(
+                    &sender,
+                    &input,
+                    &properties
+                ),
+                OperatorKind::LinearRegression => handle_linear_regression_operator_execution(
                     &sender,
                     &input,
                     &properties

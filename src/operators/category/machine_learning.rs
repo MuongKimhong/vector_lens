@@ -238,11 +238,29 @@ pub fn handle_train_test_split_operator_execution(
     let test_size = total_rows - train_size;
     let train_df = new_df.slice(0, train_size);
     let test_df = new_df.slice(train_size as i64, test_size);
-
-    println!("train df {:?}", train_df);
-    println!("test df {:?}", test_df);
-
     let _ = task_sender.send(TaskChannelEvent::SetTestData(DataValue::Table(test_df)));
 
     DataValue::Table(train_df)
+}
+
+pub fn linear_regression_operator() -> Operator {
+    Operator::new(
+        "Linear Regression",
+        OperatorKind::TrainTestSplit,
+        DataValue::Table(DataFrame::empty()),
+        DataValue::Table(DataFrame::empty()),
+        OperatorCategory::MachineLearning,
+        HashMap::from([
+            ("train_set_percent".to_string(), PropertyValue::Float(80.0)),
+            ("shuffle".to_string(), PropertyValue::Bool(true)),
+        ])
+    )
+}
+
+pub fn handle_linear_regression_operator_execution(
+    task_sender: &Sender<TaskChannelEvent>,
+    input: &DataValue,
+    properties: &HashMap<String, PropertyValue>
+) -> DataValue {
+    DataValue::None
 }

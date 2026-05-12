@@ -90,14 +90,6 @@ pub fn setup_home_view(
                             on: on_design_btn_clicked
                         ),
                         button_!(
-                            "Result",
-                            id: "result-tab-btn",
-                            class: "is-light",
-                            shadow: None,
-                            border_radius: px(0);
-                            on: on_result_btn_clicked
-                        ),
-                        button_!(
                             "Run",
                             id: "run-btn",
                             class: "is-success",
@@ -114,69 +106,6 @@ pub fn setup_home_view(
         let property_panel_entity = property_panel(root_parent.commands_mut());
         root_parent.commands_mut().entity(row_entity).add_child(property_panel_entity);
     });
-
-    // commands.spawn(
-    //     root_!(
-    //         route: "home",
-    //         background_color: "transparent",
-
-    //         on: |mut clicked: On<Pointer<Click>>, mut messages: MessageWriter<ToggleOpContext>| {
-    //             messages.write(ToggleOpContext::hide());
-    //             clicked.propagate(false);
-    //         },
-
-    //         [
-    //             home_menu(),
-    //             row_!(
-    //                 width: percent(100),
-    //                 height: percent(100),
-    //                 margin_top: px(10),
-    //                 align_items: AlignItems::Start;
-
-    //                 [
-    //                     operator_panel(&operator_list),
-    //                     console_panel(),
-    //                     property_panel(),
-    //                     operator_context(),
-
-    //                     row_!(
-    //                         position_type: PositionType::Absolute,
-    //                         width: auto(),
-    //                         left: percent(50),
-    //                         height: auto();
-
-    //                         [
-    //                             button_!(
-    //                                 "Design",
-    //                                 id: "design-tab-btn",
-    //                                 class: "is-primary-dark",
-    //                                 shadow: None,
-    //                                 border_radius_from: (px(5), px(0), px(0), px(5));
-    //                                 on: on_design_btn_clicked
-    //                             ),
-    //                             button_!(
-    //                                 "Result",
-    //                                 id: "result-tab-btn",
-    //                                 class: "is-light",
-    //                                 shadow: None,
-    //                                 border_radius: px(0);
-    //                                 on: on_result_btn_clicked
-    //                             ),
-    //                             button_!(
-    //                                 "Run",
-    //                                 id: "run-btn",
-    //                                 class: "is-success",
-    //                                 shadow: None,
-    //                                 border_radius_from: (px(0), px(5), px(5), px(0));
-    //                                 on: on_run_btn_clicked
-    //                             )
-    //                         ]
-    //                     )
-    //                 ]
-    //             )
-    //         ]
-    //     )
-    // );
 }
 
 fn on_design_btn_clicked(_: On<Clicked>, mut ui_state: ResMut<UiState>) {
