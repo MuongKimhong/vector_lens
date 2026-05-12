@@ -82,6 +82,7 @@ pub fn operator_panel(operator_list: &OperatorList) -> impl Bundle {
                                         mut urmvp_msg: MessageWriter<UpdateReplaceMissingValuePropertyAfterOPSpawned>,
                                         mut usap_msg : MessageWriter<UpdateSelectAttributesPropertyAfterOPSpawned>,
                                         mut unaep_msg: MessageWriter<UpdateNormalizerAndEncoderPropertyAfterOPSpawned>,
+                                        mut ulrp_msg: MessageWriter<UpdateLinearRegressionPropertyAfterOPSpawned>,
                                         design_page_root_entity: Res<DesignPageRootEntity>
                                     | {
                                         let mut new_op = Operator::new_from(&op);
@@ -103,6 +104,9 @@ pub fn operator_panel(operator_list: &OperatorList) -> impl Bundle {
                                             }
                                             OperatorKind::NormalizerAndEncoder => {
                                                 unaep_msg.write(UpdateNormalizerAndEncoderPropertyAfterOPSpawned);
+                                            }
+                                            OperatorKind::LinearRegression => {
+                                                ulrp_msg.write(UpdateLinearRegressionPropertyAfterOPSpawned);
                                             }
                                             _ => {}
                                         }

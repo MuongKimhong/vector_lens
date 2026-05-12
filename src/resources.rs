@@ -91,7 +91,8 @@ impl OperatorList {
             save_csv_or_excel_operator(),
             replace_missing_value_operator(),
             normalizer_and_encoder_operator(),
-            train_test_split_operator()
+            train_test_split_operator(),
+            linear_regression_operator()
         ]
     }
 
