@@ -160,7 +160,8 @@ pub fn handle_insert_task_channel_resource_system(
 pub fn listen_to_task_channel_receiver_system(
     receiver: Option<Res<TaskChannelReceiver>>,
     mut console_log: ResMut<ConsoleLog>,
-    mut test_set: ResMut<TestSet>
+    mut test_set: ResMut<TestSet>,
+    mut pre_read_content: ResMut<PreReadCsvOrExcelContent>
 ) {
     let Some(receiver) = receiver else {
         return;
@@ -172,6 +173,12 @@ pub fn listen_to_task_channel_receiver_system(
             TaskChannelEvent::SetTestData(data) => {
                 match data {
                     DataValue::Table(_) => test_set.0 = Some(data.clone()),
+                    _ => {}
+                }
+            }
+            TaskChannelEvent::UpdatePreReadContentAfterSelectAttributes(data) => {
+                match data {
+                    DataValue::Table(_) => pre_read_content.0 = data.clone(),
                     _ => {}
                 }
             }

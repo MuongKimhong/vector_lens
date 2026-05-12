@@ -208,6 +208,7 @@ impl ConsoleLog {
 pub enum TaskChannelEvent {
     LogMessage(LogType),
     SetTestData(DataValue),
+    UpdatePreReadContentAfterSelectAttributes(DataValue),
     None
 }
 

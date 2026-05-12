@@ -341,5 +341,9 @@ pub fn handle_select_attributes_operator_execution(
         }
     };
 
+    let _ = task_sender.send(TaskChannelEvent::UpdatePreReadContentAfterSelectAttributes(
+        DataValue::Table(df.clone())
+    ));
+
     DataValue::Table(df)
 }

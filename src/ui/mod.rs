@@ -112,9 +112,9 @@ fn on_design_btn_clicked(_: On<Clicked>, mut ui_state: ResMut<UiState>) {
     ui_state.viewing_tab = ViewingTab::Design;
 }
 
-fn on_result_btn_clicked(_: On<Clicked>, mut ui_state: ResMut<UiState>) {
-    ui_state.viewing_tab = ViewingTab::Result;
-}
+// fn on_result_btn_clicked(_: On<Clicked>, mut ui_state: ResMut<UiState>) {
+//     ui_state.viewing_tab = ViewingTab::Result;
+// }
 
 fn handle_stop_running_process(
     ui_state: &mut UiState,
