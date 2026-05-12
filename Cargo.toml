@@ -26,8 +26,12 @@ polars = { version = "0.53", features = [
     "polars-io",
     "dtype-categorical",
     "to_dummies",
+    "ndarray",
     "random"
 ]}
+ndarray = "0.17.2"
+linfa = "0.8.1"
+linfa-linear = "0.8.1"
 polars_excel_writer = "0.25.0"
 crossbeam-channel = "0.5.15"
 

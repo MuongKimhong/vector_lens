@@ -409,3 +409,21 @@ pub fn train_test_split_property_container() -> impl Bundle {
         ]
     )
 }
+
+pub fn linear_regression_property_container() -> impl Bundle {
+    column_!(
+        id: "linear-regression-property-container",
+        class: "property-container",
+        display: Display::None,
+
+        [
+            column_!(id: "linear-regression-column", []),
+
+            text_!("*Description", margin_top: px(20)),
+            text_!(
+                "Perform linear regression on data",
+                font_size: 11.5
+            )
+        ]
+    )
+}

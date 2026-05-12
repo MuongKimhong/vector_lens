@@ -45,3 +45,6 @@ pub struct UpdateSelectAttributesPropertyAfterOPSpawned;
 
 #[derive(Message)]
 pub struct UpdateNormalizerAndEncoderPropertyAfterOPSpawned;
+
+#[derive(Message)]
+pub struct UpdateLinearRegressionPropertyAfterOPSpawned;

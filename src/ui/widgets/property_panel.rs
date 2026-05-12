@@ -14,7 +14,8 @@ pub enum PropertyType {
     SaveCsvOrExcel,
     ReplaceMissingValue,
     NormalizerAndEncoder,
-    TrainTestSplit
+    TrainTestSplit,
+    LinearRegression
 }
 
 #[derive(Resource, Debug)]
@@ -99,6 +100,7 @@ pub fn handle_update_property_panel_content(
         PropertyType::ReplaceMissingValue => "replace-missing-value-property-container",
         PropertyType::NormalizerAndEncoder => "normalizer-and-encoder-property-container",
         PropertyType::TrainTestSplit => "train-test-split-property-container",
+        PropertyType::LinearRegression => "linear-regression-property-container",
         _ => return
     };
 
@@ -149,6 +151,7 @@ pub fn property_panel(commands: &mut Commands) -> Entity {
                     column_parent.spawn(replace_missing_value_property_container());
                     column_parent.spawn(normalizer_and_encoder_property_container());
                     column_parent.spawn(train_test_split_property_container());
+                    column_parent.spawn(linear_regression_property_container());
                 });
         })
         .id()

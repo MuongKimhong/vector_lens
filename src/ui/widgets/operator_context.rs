@@ -87,6 +87,7 @@ fn on_property_btn_clicked(
                 "Replace missing value" => PropertyType::ReplaceMissingValue,
                 "Normalizer & Encoder" => PropertyType::NormalizerAndEncoder,
                 "Train & Test split" => PropertyType::TrainTestSplit,
+                "Linear Regression" => PropertyType::LinearRegression,
                 _ => PropertyType::None
             };
         }

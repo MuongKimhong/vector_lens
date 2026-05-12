@@ -24,6 +24,7 @@ impl Plugin for OperatorPlugin {
         app.add_message::<UpdateReplaceMissingValuePropertyAfterOPSpawned>();
         app.add_message::<UpdateSelectAttributesPropertyAfterOPSpawned>();
         app.add_message::<UpdateNormalizerAndEncoderPropertyAfterOPSpawned>();
+        app.add_message::<UpdateLinearRegressionPropertyAfterOPSpawned>();
         app.insert_resource(TestSet::default());
 
         app.add_systems(
