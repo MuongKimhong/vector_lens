@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use makara::prelude::*;
 use chrono::Local;
 use uuid::Uuid;
+use linfa_linear::FittedLinearRegression;
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -206,10 +207,18 @@ impl ConsoleLog {
 }
 
 #[derive(Debug)]
+pub struct LinearRegressionPredictionData {
+    pub feature_names: Vec<String>,
+    pub target_name: String,
+    pub model: FittedLinearRegression<f32>
+}
+
+#[derive(Debug)]
 pub enum TaskChannelEvent {
     LogMessage(LogType),
     SetTestData(DataValue),
     UpdatePreReadContentAfterSelectAttributes(DataValue),
+    LinearRegressionPrediction(LinearRegressionPredictionData),
     None
 }
 

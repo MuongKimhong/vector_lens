@@ -182,6 +182,7 @@ pub fn select_attributes_operator() -> Operator {
 fn on_column_checkbox_active(
     active: On<Active<String>>,
     mut operator_q: Query<&mut Operator>,
+    mut writer: MessageWriter<UpdateLinearRegressionTargetChoice>
 ) {
     for mut op in operator_q.iter_mut() {
         if op.kind != OperatorKind::SelectAttributes {
@@ -204,6 +205,7 @@ fn on_column_checkbox_active(
                 if !exists {
                     attributes.push(PropertyValue::String(active.data.clone()));
                 }
+                writer.write(UpdateLinearRegressionTargetChoice(attributes.clone()));
             }
             _ => {}
         }
@@ -213,6 +215,7 @@ fn on_column_checkbox_active(
 fn on_column_checkbox_inactive(
     inactive: On<Inactive<String>>,
     mut operator_q: Query<&mut Operator>,
+    mut writer: MessageWriter<UpdateLinearRegressionTargetChoice>
 ) {
     for mut op in operator_q.iter_mut() {
         if op.kind != OperatorKind::SelectAttributes {
@@ -231,6 +234,7 @@ fn on_column_checkbox_inactive(
                         true
                     }
                 });
+                writer.write(UpdateLinearRegressionTargetChoice(attributes.clone()));
             }
             _ => {}
         }
@@ -341,9 +345,9 @@ pub fn handle_select_attributes_operator_execution(
         }
     };
 
-    let _ = task_sender.send(TaskChannelEvent::UpdatePreReadContentAfterSelectAttributes(
-        DataValue::Table(df.clone())
-    ));
+    // let _ = task_sender.send(TaskChannelEvent::UpdatePreReadContentAfterSelectAttributes(
+    //     DataValue::Table(df.clone())
+    // ));
 
     DataValue::Table(df)
 }

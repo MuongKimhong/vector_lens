@@ -2,6 +2,12 @@ use bevy::prelude::*;
 use bevy::tasks::{block_on, Task};
 use bevy::tasks::futures_lite::future;
 use crate::utils::create_log_with_timestamp;
+use polars::prelude::{col, NamedFrom, Series, lit, DataFrameOps,
+    CsvReadOptions, CsvWriter, DataFrame, SerReader, SerWriter, IntoLazy,
+    datatypes::{Float64Type, Float32Type}, IndexOrder
+};
+use ndarray::ArrayBase;
+use linfa::prelude::*;
 
 use super::*;
 
@@ -161,7 +167,8 @@ pub fn listen_to_task_channel_receiver_system(
     receiver: Option<Res<TaskChannelReceiver>>,
     mut console_log: ResMut<ConsoleLog>,
     mut test_set: ResMut<TestSet>,
-    mut pre_read_content: ResMut<PreReadCsvOrExcelContent>
+    mut pre_read_content: ResMut<PreReadCsvOrExcelContent>,
+    sender: Option<Res<TaskChannelSender>>
 ) {
     let Some(receiver) = receiver else {
         return;
@@ -176,12 +183,103 @@ pub fn listen_to_task_channel_receiver_system(
                     _ => {}
                 }
             }
-            TaskChannelEvent::UpdatePreReadContentAfterSelectAttributes(data) => {
-                match data {
-                    DataValue::Table(_) => pre_read_content.0 = data.clone(),
+            TaskChannelEvent::LinearRegressionPrediction(data) => {
+                println!("prediction data {:?}", data);
+
+                // let Some(sender) = sender else {
+                //     return;
+                // };
+
+                let test_df = test_set.0.as_mut().unwrap();
+
+                match test_df {
+                    DataValue::Table(test_df) => {
+                        let num_test_rows = test_df.height();
+                        let num_features = data.feature_names.len();
+
+                        println!("[LR] Preparing test features for prediction...");
+
+                        // Extract the test features using the exact same columns used during training
+                        let test_x_df = match test_df.select(&data.feature_names) {
+                            Ok(sub_df) => sub_df,
+                            Err(e) => {
+                                println!("test_x_df error {:?}", e);
+                                return;
+                            }
+                        };
+
+                        let test_x_flat: Vec<f32> = match test_x_df.to_ndarray::<Float32Type>(IndexOrder::C) {
+                            Ok(matrix) => matrix.into_raw_vec(),
+                            Err(e) => {
+                                println!("test x flat error {:?}", e);
+                                return;
+                            }
+                        };
+
+                        // Reconstruct the 2D matrix structure for Linfa
+                        let test_records: ndarray::Array2<f32> = ArrayBase::from_shape_vec((num_test_rows, num_features), test_x_flat).unwrap();
+
+                        println!("[LR] Running predictions...");
+                        // model.predict() outputs a 1D Array containing your predicted numeric values
+                        let predictions = data.model.predict(&test_records);
+
+                        let y_df = match test_df.select(&[&data.target_name as &str]) {
+                            Ok(sub_df) => sub_df,
+                            Err(e) => {
+                                println!("[LR Error] Target column not found in test data: {:?}", e);
+                                return;
+                            }
+                        };
+
+                        // 2. Flatten the true target data into a Vec<f32>
+                        let y_flat_vec: Vec<f32> = match y_df.to_ndarray::<Float32Type>(IndexOrder::C) {
+                            Ok(matrix) => matrix.into_raw_vec(),
+                            Err(e) => {
+                                println!("[LR Error] Failed to flatten true targets: {:?}", e);
+                                return;
+                            }
+                        };
+
+                        // 3. Reconstruct as a Linfa-compatible target array
+                        let ground_truth_targets: ndarray::Array1<f32> = ArrayBase::from_shape_vec(num_test_rows, y_flat_vec).unwrap();
+
+                        println!("[LR] Evaluating model performance metrics...");
+
+                        // 4. Pass the ground truth targets matrix into the evaluation functions
+                        let r2_score = match predictions.r2(&ground_truth_targets) {
+                            Ok(score) => score,
+                            Err(e) => {
+                                println!("[LR Warning] R2 calculation failed: {:?}", e);
+                                0.0
+                            }
+                        };
+
+                        let mse_score = match predictions.mean_squared_error(&ground_truth_targets) {
+                            Ok(mse) => mse,
+                            Err(e) => {
+                                println!("[LR Warning] MSE calculation failed: {:?}", e);
+                                0.0
+                            }
+                        };
+
+                        // Calculate Root Mean Squared Error (RMSE)
+                        let rmse_score = mse_score.sqrt();
+
+                        println!("[LR] Evaluation - R² Accuracy Score: {:.4} ({:.1}% variance explained)", r2_score, r2_score * 100.0);
+                        println!("[LR] Evaluation - Mean Squared Error (MSE): {:.4}", mse_score);
+                        println!("[LR] Evaluation - Avg Error Distance (RMSE): {:.4}", rmse_score);
+
+                        println!("[LR DEBUG] Performance stats calculated -> R2: {}, RMSE: {}", r2_score, rmse_score);
+                    },
                     _ => {}
-                }
+                };
             }
+            // TaskChannelEvent::UpdatePreReadContentAfterSelectAttributes(data) => {
+            //     match data {
+            //         DataValue::Table(_) => pre_read_content.0 = data.clone(),
+            //         _ => {}
+            //     }
+            // }
             _ => {}
         }
     }

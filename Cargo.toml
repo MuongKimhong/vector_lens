@@ -29,11 +29,12 @@ polars = { version = "0.53", features = [
     "ndarray",
     "random"
 ]}
-ndarray = "0.17.2"
+ndarray = { version = "0.16", features = ["approx"] }
 linfa = "0.8.1"
 linfa-linear = "0.8.1"
 polars_excel_writer = "0.25.0"
 crossbeam-channel = "0.5.15"
+rayon = "1.12.0"
 
 [dependencies.uuid]
 version = "1.21.0"

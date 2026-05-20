@@ -25,6 +25,7 @@ impl Plugin for OperatorPlugin {
         app.add_message::<UpdateSelectAttributesPropertyAfterOPSpawned>();
         app.add_message::<UpdateNormalizerAndEncoderPropertyAfterOPSpawned>();
         app.add_message::<UpdateLinearRegressionPropertyAfterOPSpawned>();
+        app.add_message::<UpdateLinearRegressionTargetChoice>();
         app.insert_resource(TestSet::default());
 
         app.add_systems(
@@ -34,7 +35,10 @@ impl Plugin for OperatorPlugin {
                 handle_insert_task_channel_resource_system,
                 listen_to_task_channel_receiver_system,
                 handle_update_rmv_property_after_op_spawned,
-                handle_update_sa_property_after_op_spawned
+                handle_update_sa_property_after_op_spawned,
+                handle_update_linear_regression_property_after_op_spawned,
+                handle_update_linear_regression_property_on_precontent_change,
+                handle_update_select_widget_on_select_attribute_change
             )
         );
     }

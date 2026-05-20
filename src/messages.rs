@@ -48,3 +48,6 @@ pub struct UpdateNormalizerAndEncoderPropertyAfterOPSpawned;
 
 #[derive(Message)]
 pub struct UpdateLinearRegressionPropertyAfterOPSpawned;
+
+#[derive(Message)]
+pub struct UpdateLinearRegressionTargetChoice(pub Vec<PropertyValue>);
