@@ -462,14 +462,20 @@ pub fn handle_linear_regression_operator_execution(
     let (x_flat_vec, y_flat_vec) = rayon::join(
         || {
             // Task A: Extract and flatten features
-            let x_df = df.select(&feature_names).expect("[LR] Feature selection failed");
+            let x_df = df
+                .select(&feature_names)
+                .expect("[LR] Feature selection failed");
+
             x_df.to_ndarray::<Float32Type>(IndexOrder::C)
                 .expect("[LR] Failed to flatten features")
                 .into_raw_vec()
         },
         || {
             // Task B: Extract and flatten target
-            let y_df = df.select(&[&target_clean as &str]).expect("[LR] Target selection failed");
+            let y_df = df
+                .select(&[&target_clean as &str])
+                .expect("[LR] Target selection failed");
+
             y_df.to_ndarray::<Float32Type>(IndexOrder::C)
                 .expect("[LR] Failed to flatten target")
                 .into_raw_vec()
@@ -488,10 +494,18 @@ pub fn handle_linear_regression_operator_execution(
     let dataset = Dataset::new(records, targets);
 
     // --- 7. TRAIN THE MODEL ---
+    let _ = task_sender.send(TaskChannelEvent::LogMessage(
+        log_normal("[LR] Training model...")
+    ));
+
     let model: FittedLinearRegression<f32> = match LinearRegression::default().fit(&dataset) {
         Ok(m) => m,
         Err(e) => {
-            let _ = task_sender.send(TaskChannelEvent::LogMessage(log_error(&format!("[LR] Training failed: {e}"))));
+            let _ = task_sender.send(
+                TaskChannelEvent::LogMessage(log_error(
+                    &format!("[LR] Training failed: {e}")
+                ))
+            );
             return DataValue::Error;
         }
     };
@@ -499,31 +513,20 @@ pub fn handle_linear_regression_operator_execution(
     let weights = model.params();
     let intercept = model.intercept();
 
-    // 1. Log the Intercept safely
     let _ = task_sender.send(TaskChannelEvent::LogMessage(
         log_normal(&format!("[LR] Model Intercept (Baseline): {:.4}", intercept))
     ));
 
-    // 2. Iterate using .get() to prevent out-of-bounds panics!
     for (i, col_name) in feature_names.iter().enumerate() {
         if let Some(weight_val) = weights.get(i) {
             println!("[LR] Feature '{}' Weight: {:.4}", col_name, weight_val);
-            let _ = task_sender.send(TaskChannelEvent::LogMessage(
-                log_normal(&format!("[LR] Feature '{}' Weight: {:.4}", col_name, weight_val))
-            ));
-        } else {
-            let _ = task_sender.send(TaskChannelEvent::LogMessage(
-                log_error(&format!("[LR] Out of bounds: No weight calculated for feature '{}'", col_name))
-            ));
         }
     }
 
     let _ = task_sender.send(
-        TaskChannelEvent::LogMessage(log_normal("[LR] Model successfully trained!"))
-    );
-
-    let _ = task_sender.send(
-        TaskChannelEvent::LogMessage(log_normal("[LR] Making prediction on Test set"))
+        TaskChannelEvent::LogMessage(
+            log_normal("[LR] Model successfully trained, making prediction on test set..")
+        )
     );
 
     let data = LinearRegressionPredictionData {
